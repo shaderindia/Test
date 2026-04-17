@@ -16,6 +16,8 @@
   <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css"></noscript>
 
+  <script src="https://unpkg.com/@imgly/background-removal@1.7.3/dist/browser/background-removal.js"></script>
+
   <style>
     :root {
       --primary: #6366f1;
@@ -571,7 +573,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
-  <script type="module">
+  <script>
     document.addEventListener('DOMContentLoaded', initializeApp);
 
     function initializeApp() {
@@ -626,8 +628,8 @@
       let cropper = null;
       let originalImageURL = null; 
       let currentImageURL = null;  
-      let bgRemovedURL = null; // Strict Blob Architecture
-      let lastCompositeURL = null; // Memory leak prevention
+      let bgRemovedURL = null; 
+      let lastCompositeURL = null; 
       let isAIDone = false;
 
       let isDark = false;
@@ -679,7 +681,6 @@
         });
       }
 
-      // Memory-safe compositing via Blob
       function compositeTransparentPNG(transparentURL, color, callback) {
         const img = new Image();
         img.onload = () => {
@@ -702,7 +703,6 @@
         img.src = transparentURL;
       }
 
-      // ── Step 2: Crop First (Strict Blob Memory limits) ──
       function confirmCropStep() {
         if (!cropper) return;
         
@@ -718,7 +718,6 @@
           return;
         }
 
-        // Avoid Base64 memory crash by converting canvas directly to Blob
         croppedCanvas.toBlob(blob => {
             if (currentImageURL && currentImageURL !== originalImageURL) {
                 URL.revokeObjectURL(currentImageURL);
@@ -738,28 +737,31 @@
         }, 'image/jpeg', 0.95);
       }
 
-      // ── Background Web Worker AI Engine (Crash Free) ──
+      // ── Fixed AI Engine (Loaded via Global Script Tag to bypass iOS Blocks) ──
       async function removeBackground() {
         if (!cropper) return;
         if (isAIDone) { alert("AI has already processed this image. Pick a color below or reset crop to restart."); return;}
+        
+        if (typeof imglyRemoveBackground === 'undefined') {
+            alert("The AI engine failed to load from the server. Check your internet connection or disable adblockers.");
+            return;
+        }
 
         setStatus('loading', 'Initializing Off-Thread AI Engine...');
         els.removeBgBtn.disabled = true;
         showProcessingOverlay('AI extracting subject (No freezing)...');
 
         try {
-          // Fetch native blob from our ObjectURL pointer
           const response = await fetch(currentImageURL);
           const blob = await response.blob();
 
-          // Use Imgly specifically because it handles Web Workers internally, completely unblocking the main UI thread.
-          const module = await import('https://esm.sh/@imgly/background-removal@1.7.3');
-          const removeBg = module.removeBackground || module.default;
+          // Config ensures it fetches required files from CDN instead of your local root folder
+          const config = {
+            publicPath: "https://unpkg.com/@imgly/background-removal@1.7.3/dist/",
+            model: "small" // guarantees stability on low RAM phones
+          };
 
-          // Process the Blob entirely off-thread
-          const transparentBlob = await removeBg(blob, {
-             model: "small" // guarantees stability on low RAM phones
-          });
+          const transparentBlob = await imglyRemoveBackground(blob, config);
 
           if (bgRemovedURL) URL.revokeObjectURL(bgRemovedURL);
           bgRemovedURL = URL.createObjectURL(transparentBlob);
@@ -775,10 +777,8 @@
           console.error('AI Processing Error:', err);
           hideProcessingOverlay();
           els.removeBgBtn.disabled = false;
-          let errorMessage = 'AI Removal failed. ' + err.message;
-          if (window.location.protocol === 'file:') errorMessage = 'Security block: You must run this on a local web server to test AI.';
-          setStatus('error', errorMessage);
-          alert(errorMessage); 
+          setStatus('error', 'AI Removal failed. ' + err.message);
+          alert('AI Removal failed. ' + err.message); 
         }
       }
 
@@ -945,7 +945,6 @@
         }, 150);
       }
 
-      // Memory leak prevention
       function cleanupImageURLs() {
         if (originalImageURL) URL.revokeObjectURL(originalImageURL);
         if (currentImageURL && currentImageURL !== originalImageURL) URL.revokeObjectURL(currentImageURL);
@@ -957,7 +956,6 @@
       function startCropper(url, isNewFile = false) {
         if (cropper) { cropper.destroy(); cropper = null; }
         
-        // Strictly revoke old URLs if we are switching contexts to save RAM
         if (isNewFile && currentImageURL && currentImageURL !== originalImageURL) {
              URL.revokeObjectURL(currentImageURL);
         }
