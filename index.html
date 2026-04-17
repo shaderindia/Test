@@ -386,7 +386,7 @@
             </div>
             <div class="bg-controls-row">
               <button class="ai-remove-btn" id="remove-bg-btn" type="button">
-                <i class="fa fa-magic"></i> Remove Background
+                <i class="fa fa-magic"></i> Remove Background from Crop
               </button>
               <div class="color-swatches" id="color-swatches"></div>
               <div class="color-picker-wrapper" title="Custom color">
@@ -415,7 +415,7 @@
             <h3>Quick Actions</h3>
             <div class="btn-pill-group">
               <button class="btn-main" id="autofix-btn" type="button">
-                <i class="fa fa-user-check"></i> Smart Face-Crop
+                <i class="fa fa-user-check"></i> Smart Face-Crop (Pre-AI)
               </button>
               <button class="btn-secondary" id="max-photos-btn" type="button">
                 <i class="fa fa-th"></i> Max Photos Per Page
@@ -552,9 +552,10 @@
       <h2 id="modal-title"><i class="fa fa-info-circle"></i> How to Use</h2>
       <ul>
         <li>Upload a clear, straight photo (JPG/PNG/other supported formats).</li>
-        <li>Use <b>Remove Background</b> — Pro-Grade WebGPU AI processes it entirely on your device.</li>
+        <li>**First, adjust the crop box** so your head and shoulders are correctly framed.</li>
+        <li>Use **Smart Face-Crop** to auto-frame your face on the high-res original if desired.</li>
+        <li>Use **Remove Background from Crop** — AI will process *only* the cropped area locally on your device to prevent browser crashes.</li>
         <li>Pick a background color from the swatches (white, blue, gray, custom) — updates live.</li>
-        <li>Click <b>Smart Face-Crop</b> to auto-frame your face correctly.</li>
         <li>Check preview, enable cutlines / borders if desired.</li>
         <li>Download and print on your printer or at a print shop.</li>
       </ul>
@@ -610,14 +611,15 @@
       };
 
       let cropper = null;
-      let originalImageURL = null;
-      let currentImageURL = null;
+      let originalImageURL = null; // Stores the massive original upload
+      let currentImageURL = null;  // Stores the image currently displayed in Cropper (Original OR background-removed crop)
       let currentFile = null;
-      let bgRemovedBase64 = null; 
+      let bgRemovedBase64 = null;  // Stores the transparent mask result
       let isDark = false;
       let bgColor = '#ffffff';
       let previousUnit = 'px';
       let activeSwatch = null;
+      let isAIDone = false; // Tracks if AI has processed the current image
 
       const BG_SWATCHES = [
         { color: '#ffffff', label: 'White' },
@@ -654,10 +656,14 @@
         renderCanvas();
       }
 
+      // ── Workflow: Final background compositing and re-cropping ───────
       function applyBgColorToImage() {
         if (!bgRemovedBase64) return; 
+        
+        // Combine the transparent AI mask with user's color
         compositeTransparentPNG(bgRemovedBase64, bgColor, (compositeURL) => {
-          startCropper(compositeURL, false);
+          // Restart cropper on the NEW background-removed image so they can make final adjustments
+          startCropper(compositeURL, false); 
         });
       }
 
@@ -668,11 +674,14 @@
           c.width = img.naturalWidth;
           c.height = img.naturalHeight;
           const ctx = c.getContext('2d');
+          
           if (color && color !== 'transparent') {
             ctx.fillStyle = color;
             ctx.fillRect(0, 0, c.width, c.height);
           }
+          
           ctx.drawImage(img, 0, 0);
+          
           c.toBlob(blob => {
             callback(URL.createObjectURL(blob));
           }, 'image/png');
@@ -680,50 +689,65 @@
         img.src = base64PNG;
       }
 
-      // ── Client-Side AI Background Removal (Transformers.js + Fallback) ──
+      // ── Step 1 in "Crop First" Workflow: Get Cropped Canvas (Optimized for Memory) ──
+      function getCroppedCanvasForAI() {
+        if (!cropper) return null;
+        
+        // Crucial safety limit. Even though we are cropping, the selected area could still 
+        // be massive (e.g. 100MP photo, user crops 80% of it).
+        // 1600px provides professional quality while staying under browser RAM crash limits.
+        const maxSize = 1600;
+        
+        return cropper.getCroppedCanvas({
+          maxWidth: maxSize,
+          maxHeight: maxSize,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high',
+        });
+      }
+
+      // ── Step 2 in "Crop First" Workflow: Process only the small crop ──
       async function removeBackground() {
-        if (!currentFile) {
-          alert("Please upload a photo first.");
-          return;
-        }
+        if (!cropper) { alert("Please upload a photo first."); return; }
+        if (isAIDone) { alert("AI has already processed this image. Pick a color below or reset crop to restart."); return;}
 
         setStatus('loading', 'Initializing AI Engine (May take a moment on first run)...');
         els.removeBgBtn.disabled = true;
-        showProcessingOverlay('AI is extracting the subject...');
+        showProcessingOverlay('AI is extracting subject from cropped area...');
 
         try {
-          // Import Transformers.js dynamically using the official ESM endpoint
+          // 1. Get the cropped canvas FIRST. This prevents OOM reloads.
+          const croppedCanvas = getCroppedCanvasForAI();
+          if (!croppedCanvas) throw new Error("Could not generate cropped area.");
+          const croppedDataUrl = croppedCanvas.toDataURL('image/png');
+
+          // 2. Import Transformers.js dynamically
           const { AutoModel, AutoProcessor, RawImage, env } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0');
-          
-          // Optimization flag
           env.backends.onnx.wasm.proxy = false;
 
           const processor = await AutoProcessor.from_pretrained('briaai/RMBG-1.4');
           
           let model;
           try {
-            // Attempt WebGPU first for maximum speed
+            // Attempt WebGPU
             model = await AutoModel.from_pretrained('briaai/RMBG-1.4', { 
               device: 'webgpu',
-              config: { model_type: 'custom' } // Required config fix for this specific model
+              config: { model_type: 'custom' } 
             });
           } catch (webGpuError) {
-            console.warn("WebGPU not supported on this device. Falling back to WASM/CPU processing.", webGpuError);
-            // Fallback to WASM if WebGPU is not supported (older phones, unsupported browsers)
+            console.warn("WebGPU not supported. Falling back to WASM CPU.", webGpuError);
             model = await AutoModel.from_pretrained('briaai/RMBG-1.4', { 
               device: 'wasm',
               config: { model_type: 'custom' } 
             });
           }
 
-          // Process the image
-          const image = await RawImage.fromURL(currentImageURL);
+          // 3. Process only the small cropped image
+          const image = await RawImage.fromURL(croppedDataUrl);
           const { pixel_values } = await processor(image);
-          
-          // Generate mask tensor
           const { output } = await model({ input: pixel_values });
 
-          // Extract alpha mask and resize
+          // 4. Generate mask matching the cropped dimensions
           const mask = await RawImage.fromTensor(output[0].mul(255).to('uint8')).resize(image.width, image.height);
 
           const canvas = document.createElement('canvas');
@@ -731,44 +755,42 @@
           canvas.height = image.height;
           const ctx = canvas.getContext('2d');
           
+          // Draw the original crop onto the final canvas
           const imgHTML = new Image();
-          imgHTML.src = currentImageURL;
+          imgHTML.src = croppedDataUrl;
           await new Promise(resolve => imgHTML.onload = resolve);
           ctx.drawImage(imgHTML, 0, 0);
 
-          // Inject AI mask into the alpha channel
+          // Inject AI mask into alpha channel
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           for (let i = 0; i < mask.data.length; ++i) {
             imageData.data[i * 4 + 3] = mask.data[i]; 
           }
           ctx.putImageData(imageData, 0, 0);
 
+          // Store the transparent cropped mask
           bgRemovedBase64 = canvas.toDataURL('image/png');
+          isAIDone = true; // Mark as processed
           
-          compositeTransparentPNG(bgRemovedBase64, bgColor, (compositeURL) => {
-            startCropper(compositeURL, false);
-            hideProcessingOverlay();
-            els.removeBgBtn.disabled = false;
-            setStatus('success', '✓ Background removed perfectly! Pick a color below.');
-          });
+          // Finalize by applying default color and re-cropping
+          applyBgColorToImage();
+          
+          hideProcessingOverlay();
+          els.removeBgBtn.disabled = false;
+          setStatus('success', '✓ Pro background removed from crop! Pick a color below.');
 
         } catch (err) {
           console.error('AI Processing Error:', err);
           hideProcessingOverlay();
           els.removeBgBtn.disabled = false;
-
-          let errorMessage = 'AI Removal failed. ';
-          if (window.location.protocol === 'file:') {
-            errorMessage += 'Security block: You must run this file on a local web server (like VS Code Live Server) to test the AI.';
-          } else {
-            errorMessage += err.message;
-          }
-          
+          let errorMessage = 'AI Removal failed. ' + err.message;
+          if (window.location.protocol === 'file:') errorMessage = 'Security block: You must run this on a local web server to test AI.';
           setStatus('error', errorMessage);
           alert(errorMessage); 
         }
       }
 
+      // ── UI Status Management ──────────────────────────────────────────────
       function setStatus(type, msg) {
         els.aiStatus.innerHTML = '';
         els.aiStatus.className = 'ai-status-msg';
@@ -798,6 +820,7 @@
         els.bgProcessing.setAttribute('aria-hidden', 'true');
       }
 
+      // ── Core App Logic ──────────────────────────────────────────────────────────────
       function validateNumber(value, min, max) {
         const num = parseFloat(value);
         if (!isFinite(num)) return min;
@@ -837,6 +860,7 @@
         });
 
         els.bgColorPicker.addEventListener('input', e => {
+          if(!isAIDone) { alert("Use 'Remove Background from Crop' first."); e.target.value = bgColor; return;}
           bgColor = e.target.value || '#ffffff';
           document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
           activeSwatch = null;
@@ -848,7 +872,22 @@
 
         els.rotateLeftBtn.addEventListener('click', () => { if (cropper) { cropper.rotate(-90); renderCanvas(); } });
         els.rotateRightBtn.addEventListener('click', () => { if (cropper) { cropper.rotate(90); renderCanvas(); } });
-        els.resetCropBtn.addEventListener('click', () => { if (cropper) { cropper.reset(); updateCropperAspectRatio(); renderCanvas(); } });
+        
+        els.resetCropBtn.addEventListener('click', () => { 
+          if (cropper) { 
+            if(isAIDone && originalImageURL) {
+              // If AI is done, reset takes us back to original massive image
+              isAIDone = false;
+              bgRemovedBase64 = null;
+              startCropper(originalImageURL, true);
+              setStatus('','Original image restored. Adjust crop and click Remove Background again.');
+            } else {
+              cropper.reset(); 
+              updateCropperAspectRatio(); 
+              renderCanvas();
+            }
+          } 
+        });
 
         const settingsInputs = [
           els.unit, els.dpi, els.photoWidth, els.photoHeight,
@@ -900,35 +939,50 @@
 
         cleanupImageURLs();
         bgRemovedBase64 = null;
+        isAIDone = false;
         currentFile = file;
+        
+        // Store massive original for resets
         originalImageURL = URL.createObjectURL(file);
-        currentImageURL = originalImageURL;
+        
         els.editorContainer.classList.remove('hidden');
         setStatus('', '');
 
         const cropContainer = document.querySelector('.crop-container');
         if (cropContainer) { cropContainer.classList.add('pulse-effect'); setTimeout(() => cropContainer.classList.remove('pulse-effect'), 1200); }
-        startCropper(currentImageURL, true);
+        
+        // Start cropper on massive original first
+        startCropper(originalImageURL, true);
       }
 
       function cleanupImageURLs() {
         if (originalImageURL) { URL.revokeObjectURL(originalImageURL); originalImageURL = null; }
+        // Revoke the composite URL stored in currentImageURL if it exists and is different
         if (currentImageURL && currentImageURL !== originalImageURL) { URL.revokeObjectURL(currentImageURL); currentImageURL = null; }
       }
 
       function startCropper(url, isNewFile = false) {
         if (cropper) { cropper.destroy(); cropper = null; }
+        
+        // Handle revoking previous dynamic composite URLs
+        if (isNewFile && currentImageURL && currentImageURL !== originalImageURL) {
+             URL.revokeObjectURL(currentImageURL);
+        }
+        
         const img = els.imageToCrop;
         img.src = url;
-        if (isNewFile) currentImageURL = url;
+        
+        if (isNewFile) currentImageURL = url; // Update what is logically currently being cropped
 
         function initializeCropper() {
           try {
+            // We want to re-init cropper on either massive original (pre-AI) 
+            // OR background-removed crop (post-AI). Cropper handles scaling view perfectly.
             cropper = new Cropper(img, {
               viewMode: 1,
               dragMode: 'move',
               aspectRatio: getAspectRatio(),
-              autoCropArea: 0.85,
+              autoCropArea: 0.85, // Give breathing room on original
               restore: false,
               guides: true,
               center: true,
@@ -941,7 +995,7 @@
             });
           } catch (error) {
             console.error('Cropper initialization error:', error);
-            alert('Failed to initialize cropper. Please try again with a different image.');
+            alert('Failed to initialize editor. Try again.');
           }
         }
 
@@ -949,7 +1003,7 @@
         else { img.onload = initializeCropper; }
         img.onerror = function() {
           console.error('Image failed to load');
-          alert('Failed to load image. Your browser might not support this format.');
+          alert('Unsupported image format.');
           cleanupImageURLs();
         };
       }
@@ -1036,11 +1090,14 @@
         return Math.max(1, Math.floor((available - dims.h) / denom) + 1);
       }
 
-      // ── Smart Face-Tracking Auto-Fix ──
+      // ── Workflow: Smart Face-Tracking (Now strictly Pre-AI Fallback/Helper) ──
       async function autoFixLayout() {
+        if(isAIDone) { alert("AI has already processed the crop. Adjust colors below."); return;}
+        
         const unit = els.unit.value;
         function pxToCurrent(px) { const val = fromPx(px, unit); return unit === 'px' ? Math.round(val) : val.toFixed(2); }
         
+        // Standard passport dimensions 
         els.photoWidth.value = pxToCurrent(300);
         els.photoHeight.value = pxToCurrent(400);
         els.hSpacing.value = pxToCurrent(35);
@@ -1052,6 +1109,7 @@
           cropper.setAspectRatio(300 / 400);
           
           try {
+            // Attempt to find face on massive original for user. Native Free API.
             if ('FaceDetector' in window) {
               const faceDetector = new window.FaceDetector({ maxDetectedFaces: 1 });
               const faces = await faceDetector.detect(els.imageToCrop);
@@ -1059,37 +1117,29 @@
               if (faces.length > 0) {
                 const face = faces[0].boundingBox;
                 
+                // Ideal passport composition
                 const faceCenterX = face.x + (face.width / 2);
                 const faceCenterY = face.y + (face.height / 2);
-                
                 const cropWidth = face.width * 2.6; 
                 const cropHeight = cropWidth * (400 / 300); 
                 
-                const cropX = faceCenterX - (cropWidth / 2);
-                const cropY = faceCenterY - (cropHeight * 0.42); 
-                
                 cropper.setData({
-                  x: cropX,
-                  y: Math.max(0, cropY), 
+                  x: faceCenterX - (cropWidth / 2),
+                  y: Math.max(0, faceCenterY - (cropHeight * 0.42)), 
                   width: cropWidth,
                   height: cropHeight
                 });
-              } else {
-                 cropper.reset(); // Fallback if API runs but finds no face
-              }
-            } else {
-               cropper.reset(); // Fallback if API does not exist
-            }
+              } else { cropper.reset(); }
+            } else { cropper.reset(); }
           } catch(e) {
-            console.warn("Face detection failed. Falling back to center crop.", e);
+            console.warn("Hardware face detection failed. Center crop fallback.", e);
             cropper.reset();
           }
         }
         
         renderCanvas();
-        
         const orig = els.autofixBtn.innerHTML;
-        els.autofixBtn.innerHTML = '<i class="fa fa-user-check"></i> Smart Crop Applied';
+        els.autofixBtn.innerHTML = '<i class="fa fa-user-check"></i> Pre-AI Face Crop';
         els.autofixBtn.disabled = true;
         setTimeout(() => { els.autofixBtn.innerHTML = orig; els.autofixBtn.disabled = false; }, 1600);
       }
@@ -1104,6 +1154,7 @@
         setTimeout(() => { els.maxPhotosBtn.innerHTML = orig; els.maxPhotosBtn.disabled = false; }, 1400);
       }
 
+      // ── Core Printing Renderer ──────────────────────────────────────────────────────────────
       function renderCanvas() {
         const canvas = els.outputCanvas;
         if (!canvas) return;
@@ -1112,10 +1163,13 @@
         const count = Math.max(1, parseInt(els.numPhotos.value || '1', 10) || 1);
         const pageW = Math.max(1, Math.round(page.w));
         const pageH = Math.max(1, Math.round(page.h));
+        
         canvas.width = pageW; canvas.height = pageH;
         canvas.style.width = '100%'; canvas.style.height = 'auto';
+        
         ctx.fillStyle = isDark ? '#111827' : '#ffffff';
         ctx.fillRect(0, 0, pageW, pageH);
+        
         if (!cropper) return;
 
         const perRow = computePerRow(dims, page);
@@ -1124,12 +1178,13 @@
         if (maxRows < 1) return;
         const photosToDraw = Math.min(count, perRow * maxRows);
 
+        // Get the photo strictly from what Cropper has selected
         const cropCanvas = cropper.getCroppedCanvas({
           width: Math.max(1, Math.round(dims.w)),
           height: Math.max(1, Math.round(dims.h)),
           imageSmoothingEnabled: true,
           imageSmoothingQuality: 'high',
-          fillColor: bgColor === 'transparent' ? 'rgba(0,0,0,0)' : bgColor
+          fillColor: bgColor === 'transparent' ? 'rgba(0,0,0,0)' : bgColor // Apply color behind selection strictly for grid
         });
         if (!cropCanvas) return;
 
@@ -1139,15 +1194,11 @@
           const col = i % perRow;
           const x = dims.marginL + col * (dims.w + dims.gapH);
           const y = dims.marginT + row * (dims.h + dims.gapV);
+          
           if (x + dims.w > pageW + 0.1 || y + dims.h > pageH + 0.1) continue;
 
-          if (bgRemovedBase64) {
-            if (bgColor && bgColor !== 'transparent') {
-              ctx.fillStyle = bgColor;
-              ctx.fillRect(x, y, dims.w, dims.h);
-            }
-          }
           ctx.drawImage(cropCanvas, x, y, dims.w, dims.h);
+          
           if (showBorder) {
             ctx.save(); ctx.strokeStyle = '#000000'; ctx.lineWidth = 1;
             ctx.strokeRect(x + 0.5, y + 0.5, dims.w - 1, dims.h - 1);
@@ -1201,15 +1252,18 @@
         const filename = 'passport-photo-' + Date.now() + '.' + ext;
         const btn = highQuality ? els.downloadHQBtn : els.downloadBtn;
         const orig = btn.innerHTML;
+        
         btn.disabled = true; btn.innerHTML = '<i class="fa fa-check"></i> Downloaded'; btn.classList.add('btn-success');
+        
         els.outputCanvas.toBlob(blob => {
-          if (!blob) { alert('Error: Could not generate image. Please try again.'); btn.innerHTML = orig; btn.disabled = false; btn.classList.remove('btn-success'); return; }
+          if (!blob) { alert('Canvas error.'); btn.innerHTML = orig; btn.disabled = false; btn.classList.remove('btn-success'); return; }
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url; link.download = filename;
           document.body.appendChild(link); link.click();
           setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 200);
         }, mime, quality);
+        
         setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; btn.classList.remove('btn-success'); }, 2000);
       }
 
