@@ -402,7 +402,7 @@
           <div class="ai-bg-panel-title">
             <i class="fa fa-wand-magic-sparkles"></i>
             AI Background Removal &amp; Color
-            <span style="font-size:.72rem;font-weight:400;color:var(--text-muted);margin-left:.4rem;">powered by Local WebGPU AI</span>
+            <span style="font-size:.72rem;font-weight:400;color:var(--text-muted);margin-left:.4rem;">powered by Off-Thread AI</span>
           </div>
           <div class="bg-controls-row">
             <button class="ai-remove-btn" id="remove-bg-btn" type="button">
@@ -583,7 +583,6 @@
         bgProcessing: document.getElementById('bg-processing'),
         processingMsg: document.getElementById('processing-msg'),
         
-        // Workflow UI elements
         confirmCropBtn: document.getElementById('confirm-crop-btn'),
         aiBgPanel: document.getElementById('ai-bg-panel'),
         settingsSection: document.getElementById('settings-section'),
@@ -627,8 +626,10 @@
       let cropper = null;
       let originalImageURL = null; 
       let currentImageURL = null;  
-      let currentFile = null;
-      let bgRemovedBase64 = null;  
+      let bgRemovedURL = null; // Strict Blob Architecture
+      let lastCompositeURL = null; // Memory leak prevention
+      let isAIDone = false;
+
       let isDark = false;
       let bgColor = '#ffffff';
       let previousUnit = 'px';
@@ -670,13 +671,16 @@
       }
 
       function applyBgColorToImage() {
-        if (!bgRemovedBase64) return; 
-        compositeTransparentPNG(bgRemovedBase64, bgColor, (compositeURL) => {
+        if (!bgRemovedURL) return; 
+        compositeTransparentPNG(bgRemovedURL, bgColor, (compositeURL) => {
+          if (lastCompositeURL) URL.revokeObjectURL(lastCompositeURL);
+          lastCompositeURL = compositeURL;
           startCropper(compositeURL, false);
         });
       }
 
-      function compositeTransparentPNG(base64PNG, color, callback) {
+      // Memory-safe compositing via Blob
+      function compositeTransparentPNG(transparentURL, color, callback) {
         const img = new Image();
         img.onload = () => {
           const c = document.createElement('canvas');
@@ -695,102 +699,72 @@
             callback(URL.createObjectURL(blob));
           }, 'image/png');
         };
-        img.src = base64PNG;
+        img.src = transparentURL;
       }
 
-      // ── Step 2 in Workflow: Permanently erase uncropped parts ──
+      // ── Step 2: Crop First (Strict Blob Memory limits) ──
       function confirmCropStep() {
         if (!cropper) return;
         
-        // Get the trimmed, high-quality canvas
         const croppedCanvas = cropper.getCroppedCanvas({
-          maxWidth: 2000,
-          maxHeight: 2000,
+          maxWidth: 1200, 
+          maxHeight: 1200,
           imageSmoothingEnabled: true,
           imageSmoothingQuality: 'high'
         });
         
         if (!croppedCanvas) {
-          alert("Could not process the crop. Please try again.");
+          alert("Could not process crop.");
           return;
         }
 
-        // Physically erase uncropped parts from memory/view
-        currentImageURL = croppedCanvas.toDataURL('image/png');
-        
-        // Restart cropper on the new perfectly trimmed image
-        startCropper(currentImageURL, false);
+        // Avoid Base64 memory crash by converting canvas directly to Blob
+        croppedCanvas.toBlob(blob => {
+            if (currentImageURL && currentImageURL !== originalImageURL) {
+                URL.revokeObjectURL(currentImageURL);
+            }
+            
+            currentImageURL = URL.createObjectURL(blob);
+            startCropper(currentImageURL, false);
 
-        // Unlock UI Steps
-        els.confirmCropBtn.classList.add('hidden');
-        els.aiBgPanel.classList.remove('hidden');
-        els.settingsSection.classList.remove('hidden');
+            els.confirmCropBtn.classList.add('hidden');
+            els.aiBgPanel.classList.remove('hidden');
+            els.settingsSection.classList.remove('hidden');
 
-        // Render the print preview grid
-        renderCanvas();
-
-        // Smooth scroll focus down to the newly unlocked AI tools
-        setTimeout(() => {
-          els.aiBgPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 150);
+            renderCanvas();
+            setTimeout(() => {
+                els.aiBgPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 150);
+        }, 'image/jpeg', 0.95);
       }
 
-      // ── Client-Side AI Background Removal ──
+      // ── Background Web Worker AI Engine (Crash Free) ──
       async function removeBackground() {
         if (!cropper) return;
+        if (isAIDone) { alert("AI has already processed this image. Pick a color below or reset crop to restart."); return;}
 
-        setStatus('loading', 'Initializing AI Engine (May take a moment on first run)...');
+        setStatus('loading', 'Initializing Off-Thread AI Engine...');
         els.removeBgBtn.disabled = true;
-        showProcessingOverlay('AI is extracting subject...');
+        showProcessingOverlay('AI extracting subject (No freezing)...');
 
         try {
-          // Image is already perfectly cropped, so it is safe to process directly
-          const safeDataUrl = currentImageURL;
+          // Fetch native blob from our ObjectURL pointer
+          const response = await fetch(currentImageURL);
+          const blob = await response.blob();
 
-          const { AutoModel, AutoProcessor, RawImage, env } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0');
-          env.backends.onnx.wasm.proxy = false;
+          // Use Imgly specifically because it handles Web Workers internally, completely unblocking the main UI thread.
+          const module = await import('https://esm.sh/@imgly/background-removal@1.7.3');
+          const removeBg = module.removeBackground || module.default;
 
-          const processor = await AutoProcessor.from_pretrained('briaai/RMBG-1.4');
+          // Process the Blob entirely off-thread
+          const transparentBlob = await removeBg(blob, {
+             model: "small" // guarantees stability on low RAM phones
+          });
+
+          if (bgRemovedURL) URL.revokeObjectURL(bgRemovedURL);
+          bgRemovedURL = URL.createObjectURL(transparentBlob);
+          isAIDone = true; 
           
-          let model;
-          try {
-            model = await AutoModel.from_pretrained('briaai/RMBG-1.4', { 
-              device: 'webgpu',
-              config: { model_type: 'custom' } 
-            });
-          } catch (webGpuError) {
-            console.warn("WebGPU not supported. Falling back to CPU processing.");
-            model = await AutoModel.from_pretrained('briaai/RMBG-1.4', { 
-              device: 'wasm',
-              config: { model_type: 'custom' } 
-            });
-          }
-
-          const image = await RawImage.fromURL(safeDataUrl);
-          const { pixel_values } = await processor(image);
-          const { output } = await model({ input: pixel_values });
-
-          const mask = await RawImage.fromTensor(output[0].mul(255).to('uint8')).resize(image.width, image.height);
-
-          const canvas = document.createElement('canvas');
-          canvas.width = image.width;
-          canvas.height = image.height;
-          const ctx = canvas.getContext('2d');
-          
-          const imgHTML = new Image();
-          imgHTML.src = safeDataUrl;
-          await new Promise(resolve => imgHTML.onload = resolve);
-          ctx.drawImage(imgHTML, 0, 0);
-
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          for (let i = 0; i < mask.data.length; ++i) {
-            imageData.data[i * 4 + 3] = mask.data[i]; 
-          }
-          ctx.putImageData(imageData, 0, 0);
-
-          bgRemovedBase64 = canvas.toDataURL('image/png');
-          
-          // Apply default color and render
           applyBgColorToImage();
           
           hideProcessingOverlay();
@@ -808,7 +782,6 @@
         }
       }
 
-      // ── UI Status Management ──
       function setStatus(type, msg) {
         els.aiStatus.innerHTML = '';
         els.aiStatus.className = 'ai-status-msg';
@@ -877,6 +850,7 @@
         });
 
         els.bgColorPicker.addEventListener('input', e => {
+          if(!isAIDone) { alert("Confirm crop & Remove Background first."); e.target.value = bgColor; return;}
           bgColor = e.target.value || '#ffffff';
           document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
           activeSwatch = null;
@@ -884,7 +858,6 @@
           renderCanvas();
         });
 
-        // Workflow Event Listeners
         els.confirmCropBtn.addEventListener('click', confirmCropStep);
         els.removeBgBtn.addEventListener('click', removeBackground);
 
@@ -893,8 +866,8 @@
         
         els.resetCropBtn.addEventListener('click', () => { 
           if (cropper) { 
-            // Full Reset to Original Upload
-            bgRemovedBase64 = null;
+            isAIDone = false;
+            if (bgRemovedURL) { URL.revokeObjectURL(bgRemovedURL); bgRemovedURL = null; }
             els.aiBgPanel.classList.add('hidden');
             els.settingsSection.classList.add('hidden');
             els.confirmCropBtn.classList.remove('hidden');
@@ -945,7 +918,6 @@
         handleFile(file);
       }
 
-      // ── Step 1 in Workflow: Upload and Scroll ──
       function handleFile(file) {
         const allowedExtensions = ['jpg','jpeg','png','webp','bmp','gif','tif','tiff','avif','heic','heif'];
         const ext = (file.name || '').includes('.') ? file.name.split('.').pop().toLowerCase() : '';
@@ -953,11 +925,10 @@
         if (file.size > 25 * 1024 * 1024) { alert('File too large. Max 25MB.'); return; }
 
         cleanupImageURLs();
-        bgRemovedBase64 = null;
-        currentFile = file;
+        isAIDone = false;
+        
         originalImageURL = URL.createObjectURL(file);
         
-        // Reset UI to Strict Crop-First Mode
         els.editorContainer.classList.remove('hidden');
         els.confirmCropBtn.classList.remove('hidden');
         els.aiBgPanel.classList.add('hidden');
@@ -969,20 +940,24 @@
         
         startCropper(originalImageURL, true);
 
-        // Smoothly scroll down to the image to begin cropping
         setTimeout(() => {
           els.editorContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 150);
       }
 
+      // Memory leak prevention
       function cleanupImageURLs() {
-        if (originalImageURL) { URL.revokeObjectURL(originalImageURL); originalImageURL = null; }
-        if (currentImageURL && currentImageURL !== originalImageURL) { URL.revokeObjectURL(currentImageURL); currentImageURL = null; }
+        if (originalImageURL) URL.revokeObjectURL(originalImageURL);
+        if (currentImageURL && currentImageURL !== originalImageURL) URL.revokeObjectURL(currentImageURL);
+        if (bgRemovedURL) URL.revokeObjectURL(bgRemovedURL);
+        if (lastCompositeURL) URL.revokeObjectURL(lastCompositeURL);
+        originalImageURL = currentImageURL = bgRemovedURL = lastCompositeURL = null;
       }
 
       function startCropper(url, isNewFile = false) {
         if (cropper) { cropper.destroy(); cropper = null; }
         
+        // Strictly revoke old URLs if we are switching contexts to save RAM
         if (isNewFile && currentImageURL && currentImageURL !== originalImageURL) {
              URL.revokeObjectURL(currentImageURL);
         }
@@ -1010,7 +985,7 @@
               cropend() { renderCanvas(); }
             });
           } catch (error) {
-            console.error('Cropper initialization error:', error);
+            console.error('Cropper error:', error);
             alert('Failed to initialize editor. Try again.');
           }
         }
@@ -1106,7 +1081,6 @@
         return Math.max(1, Math.floor((available - dims.h) / denom) + 1);
       }
 
-      // Smart Face-Crop Button
       async function autoFixLayout() {
         const unit = els.unit.value;
         function pxToCurrent(px) { const val = fromPx(px, unit); return unit === 'px' ? Math.round(val) : val.toFixed(2); }
@@ -1128,7 +1102,6 @@
               
               if (faces.length > 0) {
                 const face = faces[0].boundingBox;
-                
                 const faceCenterX = face.x + (face.width / 2);
                 const faceCenterY = face.y + (face.height / 2);
                 const cropWidth = face.width * 2.6; 
