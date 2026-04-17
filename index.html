@@ -16,8 +16,6 @@
   <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css"></noscript>
 
-  <script src="https://unpkg.com/@imgly/background-removal@1.7.3/dist/browser/background-removal.js"></script>
-
   <style>
     :root {
       --primary: #6366f1;
@@ -32,6 +30,7 @@
       --transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
       --success: #10b981;
       --success-hover: #059669;
+      --error: #ef4444;
     }
     body.dark {
       --primary: #818cf8;
@@ -44,7 +43,7 @@
       --shadow: 0 12px 32px 0 rgba(0,0,0,0.6);
     }
     * { box-sizing:border-box; margin:0; padding:0; }
-    html,body { max-width:100%; overflow-x:hidden; }
+    html,body { max-width:100%; overflow-x:hidden; scroll-behavior: smooth; }
     html { -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; }
     body {
       font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
@@ -58,7 +57,6 @@
       -moz-osx-font-smoothing:grayscale;
       transition:background .3s,color .3s;
     }
-    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border-width:0; }
 
     .header-glass {
       background:var(--glass-bg);
@@ -107,7 +105,6 @@
       box-shadow:var(--shadow);
     }
     h2 { font-size:clamp(1.1rem,3vw,1.25rem); margin-bottom:1.3rem; color:var(--primary); border-bottom:1px solid var(--glass-border); padding-bottom:.55rem; display:flex; align-items:center; gap:.5rem; }
-    h2 i { font-size:1rem; }
     h3 { font-size:clamp(.95rem,2.5vw,1rem); margin-bottom:.85rem; color:var(--text-main); font-weight:600; }
 
     .upload-wrapper { width:100%; max-width:100%; overflow:hidden; }
@@ -123,6 +120,48 @@
     .upload-placeholder p { font-size:clamp(.9rem,2.5vw,1rem); color:var(--text-muted); }
     #photo-upload { display:none; }
 
+    /* ── Sample Guide Section ── */
+    .sample-guide {
+      margin-top: 1.5rem;
+      background: rgba(99,102,241,0.04);
+      border: 1px solid rgba(99,102,241,0.15);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: opacity 0.3s ease, height 0.3s ease;
+    }
+    body.dark .sample-guide { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.2); }
+    .sample-guide-title {
+      font-size: 1rem; font-weight: 600; color: var(--primary);
+      margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .sample-content {
+      display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;
+    }
+    .sample-image-box {
+      width: 120px; height: 160px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .sample-image-box img { width: 100%; height: 100%; object-fit: cover; }
+    .sample-badge {
+      position: absolute; bottom: 6px; right: 6px;
+      background: var(--success); color: #fff;
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .sample-rules { list-style: none; padding: 0; flex: 1; min-width: 200px; }
+    .sample-rules li {
+      font-size: 0.9rem; color: var(--text-main); margin-bottom: 0.5rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .text-success { color: var(--success); }
+    .text-error { color: var(--error); }
+
+    /* ── Editor ── */
     #editor-container { margin-top:1.5rem; }
     .editor-toolbar-wrapper { padding:0 .5rem 1rem; width:100%; overflow:hidden; }
     .editor-toolbar { display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap; align-items:center; }
@@ -137,107 +176,44 @@
     }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
-    .ai-bg-panel-title {
-      font-size: .85rem;
-      font-weight: 600;
-      color: var(--primary);
-      margin-bottom: .75rem;
-      display: flex;
-      align-items: center;
-      gap: .4rem;
-    }
-    .ai-bg-panel-title i { font-size: .9rem; }
-    .bg-controls-row {
-      display: flex;
-      align-items: center;
-      gap: .75rem;
-      flex-wrap: wrap;
-    }
-    .color-swatches {
-      display: flex;
-      gap: .4rem;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .color-swatch {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      cursor: pointer;
-      border: 2px solid transparent;
-      transition: transform .12s, border-color .12s;
-      flex-shrink: 0;
-    }
+    .ai-bg-panel-title { font-size: .85rem; font-weight: 600; color: var(--primary); margin-bottom: .75rem; display: flex; align-items: center; gap: .4rem; }
+    .bg-controls-row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+    .color-swatches { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
+    .color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform .12s, border-color .12s; flex-shrink: 0; }
     .color-swatch:hover { transform: scale(1.15); }
     .color-swatch.active { border-color: var(--primary); transform: scale(1.1); }
     .color-swatch.checkered {
       background-image: linear-gradient(45deg,#ccc 25%,transparent 25%),linear-gradient(-45deg,#ccc 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ccc 75%),linear-gradient(-45deg,transparent 75%,#ccc 75%);
-      background-size: 8px 8px;
-      background-position: 0 0,0 4px,4px -4px,-4px 0;
+      background-size: 8px 8px; background-position: 0 0,0 4px,4px -4px,-4px 0;
     }
-    .color-picker-wrapper {
-      width:32px; height:32px; border-radius:50%; overflow:hidden;
-      border:2px solid var(--glass-border); cursor:pointer; position:relative; flex-shrink:0;
-    }
-    #bg-color-picker {
-      width:150%; height:150%; position:absolute; top:-25%; left:-25%; border:none; padding:0; cursor:pointer;
-    }
+    .color-picker-wrapper { width:32px; height:32px; border-radius:50%; overflow:hidden; border:2px solid var(--glass-border); cursor:pointer; position:relative; flex-shrink:0; }
+    #bg-color-picker { width:150%; height:150%; position:absolute; top:-25%; left:-25%; border:none; padding:0; cursor:pointer; }
+    
     .ai-remove-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: .4rem;
-      padding: .45rem 1rem;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      font-size: .85rem;
-      font-weight: 600;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      color: #fff;
-      transition: opacity .15s, transform .07s;
-      min-height: 36px;
-      white-space: nowrap;
+      display: inline-flex; align-items: center; gap: .4rem; padding: .45rem 1rem; border-radius: 999px; border: none; cursor: pointer;
+      font-size: .85rem; font-weight: 600; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff;
+      transition: opacity .15s, transform .07s; min-height: 36px; white-space: nowrap;
     }
     .ai-remove-btn:hover { opacity: .9; }
     .ai-remove-btn:active { transform: scale(.97); }
     .ai-remove-btn:disabled { opacity: .5; cursor: not-allowed; }
-    .ai-status-msg {
-      font-size: .8rem;
-      color: var(--text-muted);
-      margin-top: .5rem;
-      min-height: 1.2em;
-      display: flex;
-      align-items: center;
-      gap: .35rem;
-    }
+    
+    .ai-status-msg { font-size: .8rem; color: var(--text-muted); margin-top: .5rem; min-height: 1.2em; display: flex; align-items: center; gap: .35rem; }
     .ai-status-msg.error { color: #ef4444; }
     .ai-status-msg.success { color: var(--success); }
-    .spinner-sm {
-      width: 14px; height: 14px;
-      border: 2px solid rgba(99,102,241,.25);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      flex-shrink: 0;
-    }
+    .spinner-sm { width: 14px; height: 14px; border: 2px solid rgba(99,102,241,.25); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; flex-shrink: 0; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
     .crop-container { max-height:500px; background:#000; border-radius:12px; overflow:hidden; position:relative; margin-bottom:1rem; }
     #image-to-crop { max-width:100%; display:block; }
 
     .processing-overlay {
-      position:absolute; inset:0; background:rgba(0,0,0,.68); color:#fff;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      position:absolute; inset:0; background:rgba(0,0,0,.68); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center;
       border-radius:var(--radius); z-index:20;
     }
     .spinner { width:38px; height:38px; border:4px solid rgba(255,255,255,.28); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:1rem; }
-
     .pulse-effect { animation:gentle-pulse 1.2s ease-in-out 3; }
-    @keyframes gentle-pulse {
-      0% { transform:scale(1); box-shadow:none; }
-      50% { transform:scale(1.01); box-shadow:0 0 18px rgba(129,140,248,.4); }
-      100% { transform:scale(1); box-shadow:none; }
-    }
+    @keyframes gentle-pulse { 0% { transform:scale(1); box-shadow:none; } 50% { transform:scale(1.01); box-shadow:0 0 18px rgba(129,140,248,.4); } 100% { transform:scale(1); box-shadow:none; } }
 
     .split-view { display:grid; grid-template-columns:1.05fr .95fr; gap:clamp(1rem,3vw,2rem); }
     .settings-group { margin-bottom:1.3rem; padding-bottom:1.3rem; border-bottom:1px solid var(--glass-border); }
@@ -247,10 +223,8 @@
     .form-group label { font-size:.85rem; margin-bottom:.35rem; color:var(--text-muted); }
 
     input[type="number"], select {
-      background:rgba(255,255,255,.75); border:1px solid var(--glass-border);
-      padding:.5rem .55rem; border-radius:8px; color:var(--text-main);
-      font-family:inherit; font-size:16px !important; width:100%; min-width:0;
-      transition:border-color .16s,box-shadow .16s,background .16s;
+      background:rgba(255,255,255,.75); border:1px solid var(--glass-border); padding:.5rem .55rem; border-radius:8px; color:var(--text-main);
+      font-family:inherit; font-size:16px !important; width:100%; min-width:0; transition:border-color .16s,box-shadow .16s,background .16s;
     }
     body.dark input[type="number"], body.dark select { background:rgba(17,24,39,.8); }
     input[type="number"]:focus, select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 1px rgba(99,102,241,.55); }
@@ -259,10 +233,8 @@
     .checkbox-item { display:flex; align-items:center; gap:.4rem; font-size:.85rem; color:var(--text-muted); }
 
     .btn-main, .btn-secondary {
-      padding:.6rem 1.2rem; border-radius:999px; border:none; cursor:pointer;
-      font-weight:600; font-size:.9rem; display:inline-flex; gap:.5rem;
-      align-items:center; justify-content:center; min-height:44px; min-width:44px;
-      transition:var(--transition); white-space:nowrap;
+      padding:.6rem 1.2rem; border-radius:999px; border:none; cursor:pointer; font-weight:600; font-size:.9rem; display:inline-flex; gap:.5rem;
+      align-items:center; justify-content:center; min-height:44px; min-width:44px; transition:var(--transition); white-space:nowrap;
     }
     .btn-main { background:var(--primary); color:#fff; box-shadow:0 10px 25px rgba(79,70,229,.35); }
     .btn-main:hover { background:var(--primary-hover); transform:translateY(-1px); box-shadow:0 16px 35px rgba(79,70,229,.45); }
@@ -279,15 +251,13 @@
     .preview-panel { display:flex; flex-direction:column; }
     .canvas-wrapper {
       background:#e5e7eb; border:1px solid var(--glass-border); border-radius:12px;
-      overflow:hidden; margin-bottom:1rem; min-height:300px;
-      display:flex; align-items:center; justify-content:center; padding:1rem;
+      overflow:hidden; margin-bottom:1rem; min-height:300px; display:flex; align-items:center; justify-content:center; padding:1rem;
     }
     body.dark .canvas-wrapper { background:#111827; }
     #output-canvas { display:block; max-width:100%; height:auto !important; box-shadow:0 4px 10px rgba(15,23,42,.45); border-radius:4px; }
 
     .download-actions { display:flex; gap:.75rem; flex-wrap:wrap; align-items:center; }
     .download-actions select { width:auto; min-width:90px; }
-
     .hidden { display:none !important; }
 
     footer { text-align:center; padding:clamp(1.5rem,3vw,2rem); color:var(--text-muted); font-size:.9rem; }
@@ -298,16 +268,14 @@
     .modal-glass { position:fixed; inset:0; background:rgba(15,23,42,.6); backdrop-filter:blur(4px); z-index:1000; display:none; justify-content:center; align-items:center; }
     .modal-glass.active { display:flex; }
     .modal-content {
-      background:var(--glass-bg); padding:1.75rem 1.9rem; border-radius:18px;
-      max-width:480px; width:90%; max-height:90vh; overflow-y:auto;
+      background:var(--glass-bg); padding:1.75rem 1.9rem; border-radius:18px; max-width:480px; width:90%; max-height:90vh; overflow-y:auto;
       position:relative; box-shadow:var(--shadow); border:1px solid var(--glass-border); font-size:.9rem;
     }
     .modal-content h2 { border:none; padding-bottom:.25rem; margin-bottom:.75rem; }
     .modal-content ul { padding-left:1.1rem; }
     .modal-content li { margin-bottom:.4rem; }
     .close-btn {
-      position:absolute; top:.8rem; right:.8rem; background:none; border:none; cursor:pointer;
-      color:var(--text-muted); padding:.4rem; border-radius:999px;
+      position:absolute; top:.8rem; right:.8rem; background:none; border:none; cursor:pointer; color:var(--text-muted); padding:.4rem; border-radius:999px;
       min-height:32px; min-width:32px; display:flex; align-items:center; justify-content:center; transition:background .15s;
     }
     .close-btn:hover { background:rgba(148,163,184,.25); }
@@ -324,15 +292,6 @@
       .download-actions { flex-direction:column; align-items:stretch; }
       .download-actions > * { width:100%; }
     }
-    @media (max-width:480px) {
-      .header-title { font-size:1.1rem; }
-      .upload-area { padding:1.5rem .65rem; }
-      .btn-main,.btn-secondary { font-size:.85rem; padding:.5rem 1rem; }
-    }
-
-    img { max-width:100%; height:auto; }
-    button, .nav-btn, .btn-main, .btn-secondary, .close-btn { touch-action:manipulation; }
-    input[type="text"], input[type="number"], input[type="email"], input[type="tel"], input[type="password"], textarea, select { font-size:16px !important; }
   </style>
 </head>
 
@@ -359,7 +318,7 @@
       <strong>print passport photos</strong> with pro-level layout — right from your browser.
     </p>
 
-    <section class="card">
+    <section class="card" id="upload-card">
       <h2><i class="fa fa-image"></i> 1. Upload &amp; Edit</h2>
 
       <div class="upload-wrapper">
@@ -372,8 +331,26 @@
         </div>
       </div>
 
+      <div id="sample-guide" class="sample-guide">
+        <div class="sample-guide-title">
+          <i class="fa fa-lightbulb"></i> Perfect Passport Photo Tips
+        </div>
+        <div class="sample-content">
+          <div class="sample-image-box">
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=240&h=320&q=80" alt="Sample perfect passport photo">
+            <div class="sample-badge"><i class="fa fa-check"></i></div>
+          </div>
+          <ul class="sample-rules">
+            <li><i class="fa fa-check-circle text-success"></i> Look straight at the camera</li>
+            <li><i class="fa fa-check-circle text-success"></i> Keep a neutral expression</li>
+            <li><i class="fa fa-check-circle text-success"></i> Ensure good, even lighting</li>
+            <li><i class="fa fa-times-circle text-error"></i> Do not wear glasses or hats</li>
+            <li><i class="fa fa-times-circle text-error"></i> Avoid shadows on your face</li>
+          </ul>
+        </div>
+      </div>
+
       <div id="editor-container" class="hidden">
-        
         <div class="editor-toolbar-wrapper">
           <div class="editor-toolbar">
             <button class="btn-secondary" id="change-photo-btn" type="button">
@@ -392,7 +369,7 @@
           <img id="image-to-crop" src="" alt="Image to crop">
           <div id="bg-processing" class="processing-overlay hidden" aria-hidden="true">
             <div class="spinner"></div>
-            <p id="processing-msg">Removing background...</p>
+            <p id="processing-msg">Processing...</p>
           </div>
         </div>
 
@@ -404,7 +381,7 @@
           <div class="ai-bg-panel-title">
             <i class="fa fa-wand-magic-sparkles"></i>
             AI Background Removal &amp; Color
-            <span style="font-size:.72rem;font-weight:400;color:var(--text-muted);margin-left:.4rem;">powered by Off-Thread AI</span>
+            <span style="font-size:.72rem;font-weight:400;color:var(--text-muted);margin-left:.4rem;">powered by Stable Local AI</span>
           </div>
           <div class="bg-controls-row">
             <button class="ai-remove-btn" id="remove-bg-btn" type="button">
@@ -417,7 +394,6 @@
           </div>
           <div class="ai-status-msg" id="ai-status"></div>
         </div>
-
       </div>
     </section>
 
@@ -573,7 +549,9 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
-  <script>
+  <script type="module">
+    import removeBackground from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/dist/index.browser.mjs';
+
     document.addEventListener('DOMContentLoaded', initializeApp);
 
     function initializeApp() {
@@ -585,6 +563,7 @@
         bgProcessing: document.getElementById('bg-processing'),
         processingMsg: document.getElementById('processing-msg'),
         
+        sampleGuide: document.getElementById('sample-guide'),
         confirmCropBtn: document.getElementById('confirm-crop-btn'),
         aiBgPanel: document.getElementById('ai-bg-panel'),
         settingsSection: document.getElementById('settings-section'),
@@ -737,31 +716,26 @@
         }, 'image/jpeg', 0.95);
       }
 
-      // ── Fixed AI Engine (Loaded via Global Script Tag to bypass iOS Blocks) ──
-      async function removeBackground() {
+      // Safe AI execution function
+      async function triggerRemoveBackground() {
         if (!cropper) return;
         if (isAIDone) { alert("AI has already processed this image. Pick a color below or reset crop to restart."); return;}
         
-        if (typeof imglyRemoveBackground === 'undefined') {
-            alert("The AI engine failed to load from the server. Check your internet connection or disable adblockers.");
-            return;
-        }
-
-        setStatus('loading', 'Initializing Off-Thread AI Engine...');
+        setStatus('loading', 'Initializing Stable AI Engine...');
         els.removeBgBtn.disabled = true;
-        showProcessingOverlay('AI extracting subject (No freezing)...');
+        showProcessingOverlay('AI extracting subject cleanly...');
 
         try {
           const response = await fetch(currentImageURL);
           const blob = await response.blob();
 
-          // Config ensures it fetches required files from CDN instead of your local root folder
+          // Force precise public path so Safari doesn't panic
           const config = {
-            publicPath: "https://unpkg.com/@imgly/background-removal@1.7.3/dist/",
-            model: "small" // guarantees stability on low RAM phones
+            publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/dist/",
+            model: "small" 
           };
 
-          const transparentBlob = await imglyRemoveBackground(blob, config);
+          const transparentBlob = await removeBackground(blob, config);
 
           if (bgRemovedURL) URL.revokeObjectURL(bgRemovedURL);
           bgRemovedURL = URL.createObjectURL(transparentBlob);
@@ -778,7 +752,7 @@
           hideProcessingOverlay();
           els.removeBgBtn.disabled = false;
           setStatus('error', 'AI Removal failed. ' + err.message);
-          alert('AI Removal failed. ' + err.message); 
+          alert('AI Removal failed. Please ensure adblockers are disabled for this site.'); 
         }
       }
 
@@ -859,7 +833,7 @@
         });
 
         els.confirmCropBtn.addEventListener('click', confirmCropStep);
-        els.removeBgBtn.addEventListener('click', removeBackground);
+        els.removeBgBtn.addEventListener('click', triggerRemoveBackground);
 
         els.rotateLeftBtn.addEventListener('click', () => { if (cropper) { cropper.rotate(-90); renderCanvas(); } });
         els.rotateRightBtn.addEventListener('click', () => { if (cropper) { cropper.rotate(90); renderCanvas(); } });
@@ -929,6 +903,10 @@
         
         originalImageURL = URL.createObjectURL(file);
         
+        // Hide Sample Guide
+        els.sampleGuide.style.display = 'none';
+
+        // Unlock UI
         els.editorContainer.classList.remove('hidden');
         els.confirmCropBtn.classList.remove('hidden');
         els.aiBgPanel.classList.add('hidden');
@@ -940,8 +918,9 @@
         
         startCropper(originalImageURL, true);
 
+        // Smooth Scroll Down to Editor
         setTimeout(() => {
-          els.editorContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          document.getElementById('editor-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 150);
       }
 
