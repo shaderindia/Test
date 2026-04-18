@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <meta name="theme-color" content="#6366f1">
-  <title>Free Passport Photo Maker | Pro AI Edit - SHADER7</title>
-  <meta name="description" content="Create, crop, and format passport, visa, and ID photos online for free. Download print-ready templates. Privacy first: No data leaves your device.">
+  <title>Free Passport Photo Maker | Crop & Print Online - SHADER7</title>
+  <meta name="description" content="Create, crop, and format passport, visa, and ID photos online for free. Download print-ready templates for A4 and 4R paper. No signup or data stored.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
@@ -125,16 +125,14 @@
     .editor-toolbar-wrapper { padding:0 .5rem 1rem; width:100%; overflow:hidden; }
     .editor-toolbar { display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap; align-items:center; }
 
+    /* ── AI BG Removal Panel ── */
     .ai-bg-panel {
       background: rgba(99,102,241,0.06);
       border: 1px solid rgba(99,102,241,0.2);
       border-radius: 12px;
       padding: 1rem 1.2rem;
       margin-bottom: 1rem;
-      animation: fadeIn 0.4s ease-in-out;
     }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-
     .ai-bg-panel-title {
       font-size: .85rem;
       font-weight: 600;
@@ -220,7 +218,7 @@
     }
     @keyframes spin { to { transform:rotate(360deg); } }
 
-    .crop-container { max-height:500px; background:#000; border-radius:12px; overflow:hidden; position:relative; margin-bottom:1rem; }
+    .crop-container { max-height:500px; background:#000; border-radius:12px; overflow:hidden; position:relative; }
     #image-to-crop { max-width:100%; display:block; }
 
     .processing-overlay {
@@ -340,7 +338,7 @@
       <h1 class="header-title">
         <i class="fa fa-passport"></i>
         Passport Photo Maker
-        <span class="header-badge">Pro AI</span>
+        <span class="header-badge">2025</span>
       </h1>
       <div class="header-sub">Create, crop, and print passport photos — ultra-smooth, mobile friendly, and completely free.</div>
     </div>
@@ -371,18 +369,33 @@
       </div>
 
       <div id="editor-container" class="hidden">
-        
         <div class="editor-toolbar-wrapper">
           <div class="editor-toolbar">
             <button class="btn-secondary" id="change-photo-btn" type="button">
-              <i class="fa fa-image"></i> Change
-            </button>
-            <button class="btn-main" id="autofix-btn" type="button" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); box-shadow: 0 4px 12px rgba(99,102,241,0.25);">
-              <i class="fa fa-user-check"></i> Smart Auto-Crop
+              <i class="fa fa-image"></i> Change Photo
             </button>
             <button class="btn-secondary" id="rotate-left" type="button" title="Rotate left"><i class="fa fa-undo"></i></button>
             <button class="btn-secondary" id="rotate-right" type="button" title="Rotate right"><i class="fa fa-redo"></i></button>
-            <button class="btn-secondary" id="reset-crop" type="button" title="Reset original"><i class="fa fa-sync"></i></button>
+            <button class="btn-secondary" id="reset-crop" type="button" title="Reset crop"><i class="fa fa-sync"></i></button>
+          </div>
+
+          <div class="ai-bg-panel">
+            <div class="ai-bg-panel-title">
+              <i class="fa fa-wand-magic-sparkles"></i>
+              AI Background Removal &amp; Color
+              <span style="font-size:.72rem;font-weight:400;color:var(--text-muted);margin-left:.4rem;">powered by Client-Side AI</span>
+            </div>
+            <div class="bg-controls-row">
+              <button class="ai-remove-btn" id="remove-bg-btn" type="button">
+                <i class="fa fa-magic"></i> Remove Background
+              </button>
+              <div class="color-swatches" id="color-swatches">
+                </div>
+              <div class="color-picker-wrapper" title="Custom color">
+                <input type="color" id="bg-color-picker" value="#ffffff" aria-label="Custom background color">
+              </div>
+            </div>
+            <div class="ai-status-msg" id="ai-status"></div>
           </div>
         </div>
 
@@ -393,39 +406,19 @@
             <p id="processing-msg">Removing background...</p>
           </div>
         </div>
-
-        <button id="confirm-crop-btn" class="btn-main" style="width: 100%; margin-bottom: 1rem; font-size: 1.05rem; padding: 0.8rem;">
-          <i class="fa fa-crop-simple"></i> Confirm Crop &amp; Proceed
-        </button>
-
-        <div class="ai-bg-panel hidden" id="ai-bg-panel">
-          <div class="ai-bg-panel-title">
-            <i class="fa fa-wand-magic-sparkles"></i>
-            AI Background Removal &amp; Color
-            <span style="font-size:.72rem;font-weight:400;color:var(--text-muted);margin-left:.4rem;">powered by Off-Thread AI</span>
-          </div>
-          <div class="bg-controls-row">
-            <button class="ai-remove-btn" id="remove-bg-btn" type="button">
-              <i class="fa fa-magic"></i> Remove Background
-            </button>
-            <div class="color-swatches" id="color-swatches"></div>
-            <div class="color-picker-wrapper" title="Custom color">
-              <input type="color" id="bg-color-picker" value="#ffffff" aria-label="Custom background color">
-            </div>
-          </div>
-          <div class="ai-status-msg" id="ai-status"></div>
-        </div>
-
       </div>
     </section>
 
-    <section class="card hidden" id="settings-section">
+    <section class="card" id="settings-section">
       <h2><i class="fa fa-sliders-h"></i> 2. Settings &amp; Print Preview</h2>
       <div class="split-view">
         <div class="controls-panel">
           <div class="settings-group">
-            <h3>Layout Helpers</h3>
+            <h3>Quick Actions</h3>
             <div class="btn-pill-group">
+              <button class="btn-main" id="autofix-btn" type="button">
+                <i class="fa fa-wand-magic-sparkles"></i> Auto-Fix (300×400 &amp; 35 px)
+              </button>
               <button class="btn-secondary" id="max-photos-btn" type="button">
                 <i class="fa fa-th"></i> Max Photos Per Page
               </button>
@@ -560,18 +553,20 @@
       <button class="close-btn" id="close-info" aria-label="Close"><i class="fa fa-times"></i></button>
       <h2 id="modal-title"><i class="fa fa-info-circle"></i> How to Use</h2>
       <ul>
-        <li>Upload a clear photo. The page will automatically scroll down to the editor.</li>
-        <li><strong>Step 1:</strong> Adjust the crop box or use <b>Smart Auto-Crop</b> to frame your head and shoulders correctly.</li>
-        <li><strong>Step 2:</strong> Click <b>Confirm Crop & Proceed</b>. This permanently trims the edges to save device memory.</li>
-        <li><strong>Step 3:</strong> The AI tools will appear! Click <b>Remove Background</b> to cleanly extract your subject.</li>
-        <li>Pick a background color, adjust the print layout, and download!</li>
+        <li>Upload a clear, straight photo (JPG/PNG/other supported formats).</li>
+        <li>Use <b>Remove Background</b> — AI will process it locally on your device.</li>
+        <li>Pick a background color from the swatches (white, blue, gray, custom) — updates live.</li>
+        <li>Adjust crop so your face is correctly framed.</li>
+        <li>Use <b>Auto-Fix</b> to set 300×400 px photos with 35 px margins &amp; gaps.</li>
+        <li>Check preview, enable cutlines / borders if desired.</li>
+        <li>Download and print on your printer or at a print shop.</li>
       </ul>
     </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
-  <script type="module">
+  <script>
     document.addEventListener('DOMContentLoaded', initializeApp);
 
     function initializeApp() {
@@ -582,11 +577,6 @@
         imageToCrop: document.getElementById('image-to-crop'),
         bgProcessing: document.getElementById('bg-processing'),
         processingMsg: document.getElementById('processing-msg'),
-        
-        confirmCropBtn: document.getElementById('confirm-crop-btn'),
-        aiBgPanel: document.getElementById('ai-bg-panel'),
-        settingsSection: document.getElementById('settings-section'),
-        
         removeBgBtn: document.getElementById('remove-bg-btn'),
         changePhotoBtn: document.getElementById('change-photo-btn'),
         bgColorPicker: document.getElementById('bg-color-picker'),
@@ -595,8 +585,6 @@
         rotateLeftBtn: document.getElementById('rotate-left'),
         rotateRightBtn: document.getElementById('rotate-right'),
         resetCropBtn: document.getElementById('reset-crop'),
-        autofixBtn: document.getElementById('autofix-btn'),
-        
         unit: document.getElementById('unit'),
         dpi: document.getElementById('dpi'),
         photoWidth: document.getElementById('photo-width'),
@@ -612,6 +600,7 @@
         marginLeft: document.getElementById('margin-left'),
         showCutlines: document.getElementById('show-cutlines'),
         addBorder: document.getElementById('add-border'),
+        autofixBtn: document.getElementById('autofix-btn'),
         maxPhotosBtn: document.getElementById('max-photos-btn'),
         outputCanvas: document.getElementById('output-canvas'),
         format: document.getElementById('format'),
@@ -624,17 +613,16 @@
       };
 
       let cropper = null;
-      let originalImageURL = null; 
-      let currentImageURL = null;  
-      let bgRemovedURL = null; // Strict Blob Architecture
-      let lastCompositeURL = null; // Memory leak prevention
-      let isAIDone = false;
-
+      let originalImageURL = null;
+      let currentImageURL = null;
+      let currentFile = null;
+      let bgRemovedBase64 = null; 
       let isDark = false;
       let bgColor = '#ffffff';
       let previousUnit = 'px';
       let activeSwatch = null;
 
+      // ── Preset background colors ──────────────────────────────────────────
       const BG_SWATCHES = [
         { color: '#ffffff', label: 'White' },
         { color: '#e8f0ff', label: 'Light blue' },
@@ -670,113 +658,86 @@
         renderCanvas();
       }
 
+      // ── Apply bg color to the displayed (possibly bg-removed) image ───────
       function applyBgColorToImage() {
-        if (!bgRemovedURL) return; 
-        compositeTransparentPNG(bgRemovedURL, bgColor, (compositeURL) => {
-          if (lastCompositeURL) URL.revokeObjectURL(lastCompositeURL);
-          lastCompositeURL = compositeURL;
+        if (!bgRemovedBase64) return; 
+        compositeTransparentPNG(bgRemovedBase64, bgColor, (compositeURL) => {
           startCropper(compositeURL, false);
         });
       }
 
-      // Memory-safe compositing via Blob
-      function compositeTransparentPNG(transparentURL, color, callback) {
+      // Composites a transparent PNG on top of a flat color
+      function compositeTransparentPNG(base64PNG, color, callback) {
         const img = new Image();
         img.onload = () => {
           const c = document.createElement('canvas');
           c.width = img.naturalWidth;
           c.height = img.naturalHeight;
           const ctx = c.getContext('2d');
-          
           if (color && color !== 'transparent') {
             ctx.fillStyle = color;
             ctx.fillRect(0, 0, c.width, c.height);
           }
-          
           ctx.drawImage(img, 0, 0);
-          
           c.toBlob(blob => {
             callback(URL.createObjectURL(blob));
           }, 'image/png');
         };
-        img.src = transparentURL;
+        img.src = base64PNG;
       }
 
-      // ── Step 2: Crop First (Strict Blob Memory limits) ──
-      function confirmCropStep() {
-        if (!cropper) return;
-        
-        const croppedCanvas = cropper.getCroppedCanvas({
-          maxWidth: 1200, 
-          maxHeight: 1200,
-          imageSmoothingEnabled: true,
-          imageSmoothingQuality: 'high'
-        });
-        
-        if (!croppedCanvas) {
-          alert("Could not process crop.");
+      // ── Client-Side AI Background Removal ──────────────────────────────
+      async function removeBackground() {
+        if (!currentFile) {
+          alert("Please upload a photo first.");
           return;
         }
 
-        // Avoid Base64 memory crash by converting canvas directly to Blob
-        croppedCanvas.toBlob(blob => {
-            if (currentImageURL && currentImageURL !== originalImageURL) {
-                URL.revokeObjectURL(currentImageURL);
-            }
-            
-            currentImageURL = URL.createObjectURL(blob);
-            startCropper(currentImageURL, false);
-
-            els.confirmCropBtn.classList.add('hidden');
-            els.aiBgPanel.classList.remove('hidden');
-            els.settingsSection.classList.remove('hidden');
-
-            renderCanvas();
-            setTimeout(() => {
-                els.aiBgPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 150);
-        }, 'image/jpeg', 0.95);
-      }
-
-      // ── Background Web Worker AI Engine (Crash Free) ──
-      async function removeBackground() {
-        if (!cropper) return;
-        if (isAIDone) { alert("AI has already processed this image. Pick a color below or reset crop to restart."); return;}
-
-        setStatus('loading', 'Initializing Off-Thread AI Engine...');
+        setStatus('loading', 'Initializing AI (Downloading model on first run)...');
         els.removeBgBtn.disabled = true;
-        showProcessingOverlay('AI extracting subject (No freezing)...');
+        showProcessingOverlay('AI is extracting the subject...');
 
         try {
-          // Fetch native blob from our ObjectURL pointer
-          const response = await fetch(currentImageURL);
-          const blob = await response.blob();
-
-          // Use Imgly specifically because it handles Web Workers internally, completely unblocking the main UI thread.
-          const module = await import('https://esm.sh/@imgly/background-removal@1.7.3');
-          const removeBg = module.removeBackground || module.default;
-
-          // Process the Blob entirely off-thread
-          const transparentBlob = await removeBg(blob, {
-             model: "small" // guarantees stability on low RAM phones
-          });
-
-          if (bgRemovedURL) URL.revokeObjectURL(bgRemovedURL);
-          bgRemovedURL = URL.createObjectURL(transparentBlob);
-          isAIDone = true; 
+          // FIX 1: Fetch the v1.7.0 module via esm.sh to handle all dependencies cleanly
+          const module = await import('https://esm.sh/@imgly/background-removal@1.7.0');
           
-          applyBgColorToImage();
-          
-          hideProcessingOverlay();
-          els.removeBgBtn.disabled = false;
-          setStatus('success', '✓ Pro background removed! Pick a color below.');
+          // FIX 2: Safely grab the function regardless of whether they exported it as 'removeBackground' or 'default'
+          const imglyRemoveBackground = module.removeBackground || module.default;
+
+          if (!imglyRemoveBackground) {
+            throw new Error("Could not locate the AI extraction function.");
+          }
+
+          // FIX 3: Call it WITHOUT a config object. 
+          // The v1.7.0 library defaults to its official, high-speed server (staticimgly.com)
+          // to grab the 40MB neural network, completely avoiding the unpkg 404 bugs.
+          const transparentBlob = await imglyRemoveBackground(currentFile);
+
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            bgRemovedBase64 = reader.result;
+            compositeTransparentPNG(bgRemovedBase64, bgColor, (compositeURL) => {
+              startCropper(compositeURL, false);
+              hideProcessingOverlay();
+              els.removeBgBtn.disabled = false;
+              setStatus('success', '✓ Background removed perfectly! Pick a color below.');
+            });
+          };
+          reader.readAsDataURL(transparentBlob);
 
         } catch (err) {
-          console.error('AI Processing Error:', err);
+          console.error('AI Error:', err);
           hideProcessingOverlay();
           els.removeBgBtn.disabled = false;
-          let errorMessage = 'AI Removal failed. ' + err.message;
-          if (window.location.protocol === 'file:') errorMessage = 'Security block: You must run this on a local web server to test AI.';
+
+          let errorMessage = 'AI Removal failed.';
+          
+          if (window.location.protocol === 'file:') {
+            errorMessage = 'SECURITY BLOCK: Browsers block AI Web-Workers on "file://" URLs. You MUST run this via a local server (like VS Code Live Server) or upload it to a web host.';
+          } else if (err && err.message) {
+            errorMessage = 'AI Error: ' + err.message;
+          }
+
           setStatus('error', errorMessage);
           alert(errorMessage); 
         }
@@ -810,6 +771,8 @@
         els.bgProcessing.classList.add('hidden');
         els.bgProcessing.setAttribute('aria-hidden', 'true');
       }
+
+      // ── Core ──────────────────────────────────────────────────────────────
 
       function validateNumber(value, min, max) {
         const num = parseFloat(value);
@@ -850,31 +813,19 @@
         });
 
         els.bgColorPicker.addEventListener('input', e => {
-          if(!isAIDone) { alert("Confirm crop & Remove Background first."); e.target.value = bgColor; return;}
           bgColor = e.target.value || '#ffffff';
+          // deselect all swatches
           document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
           activeSwatch = null;
           applyBgColorToImage();
           renderCanvas();
         });
 
-        els.confirmCropBtn.addEventListener('click', confirmCropStep);
         els.removeBgBtn.addEventListener('click', removeBackground);
 
         els.rotateLeftBtn.addEventListener('click', () => { if (cropper) { cropper.rotate(-90); renderCanvas(); } });
         els.rotateRightBtn.addEventListener('click', () => { if (cropper) { cropper.rotate(90); renderCanvas(); } });
-        
-        els.resetCropBtn.addEventListener('click', () => { 
-          if (cropper) { 
-            isAIDone = false;
-            if (bgRemovedURL) { URL.revokeObjectURL(bgRemovedURL); bgRemovedURL = null; }
-            els.aiBgPanel.classList.add('hidden');
-            els.settingsSection.classList.add('hidden');
-            els.confirmCropBtn.classList.remove('hidden');
-            startCropper(originalImageURL, true);
-            setStatus('','');
-          } 
-        });
+        els.resetCropBtn.addEventListener('click', () => { if (cropper) { cropper.reset(); updateCropperAspectRatio(); renderCanvas(); } });
 
         const settingsInputs = [
           els.unit, els.dpi, els.photoWidth, els.photoHeight,
@@ -925,47 +876,28 @@
         if (file.size > 25 * 1024 * 1024) { alert('File too large. Max 25MB.'); return; }
 
         cleanupImageURLs();
-        isAIDone = false;
-        
+        bgRemovedBase64 = null;
+        currentFile = file;
         originalImageURL = URL.createObjectURL(file);
-        
+        currentImageURL = originalImageURL;
         els.editorContainer.classList.remove('hidden');
-        els.confirmCropBtn.classList.remove('hidden');
-        els.aiBgPanel.classList.add('hidden');
-        els.settingsSection.classList.add('hidden');
         setStatus('', '');
 
         const cropContainer = document.querySelector('.crop-container');
         if (cropContainer) { cropContainer.classList.add('pulse-effect'); setTimeout(() => cropContainer.classList.remove('pulse-effect'), 1200); }
-        
-        startCropper(originalImageURL, true);
-
-        setTimeout(() => {
-          els.editorContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 150);
+        startCropper(currentImageURL, true);
       }
 
-      // Memory leak prevention
       function cleanupImageURLs() {
-        if (originalImageURL) URL.revokeObjectURL(originalImageURL);
-        if (currentImageURL && currentImageURL !== originalImageURL) URL.revokeObjectURL(currentImageURL);
-        if (bgRemovedURL) URL.revokeObjectURL(bgRemovedURL);
-        if (lastCompositeURL) URL.revokeObjectURL(lastCompositeURL);
-        originalImageURL = currentImageURL = bgRemovedURL = lastCompositeURL = null;
+        if (originalImageURL) { URL.revokeObjectURL(originalImageURL); originalImageURL = null; }
+        if (currentImageURL && currentImageURL !== originalImageURL) { URL.revokeObjectURL(currentImageURL); currentImageURL = null; }
       }
 
       function startCropper(url, isNewFile = false) {
         if (cropper) { cropper.destroy(); cropper = null; }
-        
-        // Strictly revoke old URLs if we are switching contexts to save RAM
-        if (isNewFile && currentImageURL && currentImageURL !== originalImageURL) {
-             URL.revokeObjectURL(currentImageURL);
-        }
-        
         const img = els.imageToCrop;
         img.src = url;
-        
-        if (isNewFile) currentImageURL = url; 
+        if (isNewFile) currentImageURL = url;
 
         function initializeCropper() {
           try {
@@ -973,7 +905,7 @@
               viewMode: 1,
               dragMode: 'move',
               aspectRatio: getAspectRatio(),
-              autoCropArea: 0.85, 
+              autoCropArea: 0.85,
               restore: false,
               guides: true,
               center: true,
@@ -985,8 +917,8 @@
               cropend() { renderCanvas(); }
             });
           } catch (error) {
-            console.error('Cropper error:', error);
-            alert('Failed to initialize editor. Try again.');
+            console.error('Cropper initialization error:', error);
+            alert('Failed to initialize cropper. Please try again with a different image.');
           }
         }
 
@@ -994,7 +926,7 @@
         else { img.onload = initializeCropper; }
         img.onerror = function() {
           console.error('Image failed to load');
-          alert('Unsupported image format.');
+          alert('Failed to load image. Your browser might not support this format.');
           cleanupImageURLs();
         };
       }
@@ -1081,49 +1013,19 @@
         return Math.max(1, Math.floor((available - dims.h) / denom) + 1);
       }
 
-      async function autoFixLayout() {
+      function autoFixLayout() {
         const unit = els.unit.value;
         function pxToCurrent(px) { const val = fromPx(px, unit); return unit === 'px' ? Math.round(val) : val.toFixed(2); }
-        
         els.photoWidth.value = pxToCurrent(300);
         els.photoHeight.value = pxToCurrent(400);
         els.hSpacing.value = pxToCurrent(35);
         els.vSpacing.value = pxToCurrent(35);
         els.marginTop.value = pxToCurrent(35);
         els.marginLeft.value = pxToCurrent(35);
-
-        if (cropper) {
-          cropper.setAspectRatio(300 / 400);
-          
-          try {
-            if ('FaceDetector' in window) {
-              const faceDetector = new window.FaceDetector({ maxDetectedFaces: 1 });
-              const faces = await faceDetector.detect(els.imageToCrop);
-              
-              if (faces.length > 0) {
-                const face = faces[0].boundingBox;
-                const faceCenterX = face.x + (face.width / 2);
-                const faceCenterY = face.y + (face.height / 2);
-                const cropWidth = face.width * 2.6; 
-                const cropHeight = cropWidth * (400 / 300); 
-                
-                cropper.setData({
-                  x: faceCenterX - (cropWidth / 2),
-                  y: Math.max(0, faceCenterY - (cropHeight * 0.42)), 
-                  width: cropWidth,
-                  height: cropHeight
-                });
-              } else { cropper.reset(); }
-            } else { cropper.reset(); }
-          } catch(e) {
-            console.warn("Hardware face detection failed. Center crop fallback.", e);
-            cropper.reset();
-          }
-        }
-        
+        if (cropper) cropper.setAspectRatio(300/400);
         renderCanvas();
         const orig = els.autofixBtn.innerHTML;
-        els.autofixBtn.innerHTML = '<i class="fa fa-user-check"></i> Applied!';
+        els.autofixBtn.innerHTML = '<i class="fa fa-check"></i> Applied';
         els.autofixBtn.disabled = true;
         setTimeout(() => { els.autofixBtn.innerHTML = orig; els.autofixBtn.disabled = false; }, 1600);
       }
@@ -1146,13 +1048,10 @@
         const count = Math.max(1, parseInt(els.numPhotos.value || '1', 10) || 1);
         const pageW = Math.max(1, Math.round(page.w));
         const pageH = Math.max(1, Math.round(page.h));
-        
         canvas.width = pageW; canvas.height = pageH;
         canvas.style.width = '100%'; canvas.style.height = 'auto';
-        
         ctx.fillStyle = isDark ? '#111827' : '#ffffff';
         ctx.fillRect(0, 0, pageW, pageH);
-        
         if (!cropper) return;
 
         const perRow = computePerRow(dims, page);
@@ -1166,7 +1065,7 @@
           height: Math.max(1, Math.round(dims.h)),
           imageSmoothingEnabled: true,
           imageSmoothingQuality: 'high',
-          fillColor: bgColor === 'transparent' ? 'rgba(0,0,0,0)' : bgColor 
+          fillColor: bgColor === 'transparent' ? 'rgba(0,0,0,0)' : bgColor
         });
         if (!cropCanvas) return;
 
@@ -1176,11 +1075,15 @@
           const col = i % perRow;
           const x = dims.marginL + col * (dims.w + dims.gapH);
           const y = dims.marginT + row * (dims.h + dims.gapV);
-          
           if (x + dims.w > pageW + 0.1 || y + dims.h > pageH + 0.1) continue;
 
+          if (bgRemovedBase64) {
+            if (bgColor && bgColor !== 'transparent') {
+              ctx.fillStyle = bgColor;
+              ctx.fillRect(x, y, dims.w, dims.h);
+            }
+          }
           ctx.drawImage(cropCanvas, x, y, dims.w, dims.h);
-          
           if (showBorder) {
             ctx.save(); ctx.strokeStyle = '#000000'; ctx.lineWidth = 1;
             ctx.strokeRect(x + 0.5, y + 0.5, dims.w - 1, dims.h - 1);
@@ -1234,18 +1137,15 @@
         const filename = 'passport-photo-' + Date.now() + '.' + ext;
         const btn = highQuality ? els.downloadHQBtn : els.downloadBtn;
         const orig = btn.innerHTML;
-        
         btn.disabled = true; btn.innerHTML = '<i class="fa fa-check"></i> Downloaded'; btn.classList.add('btn-success');
-        
         els.outputCanvas.toBlob(blob => {
-          if (!blob) { alert('Canvas error.'); btn.innerHTML = orig; btn.disabled = false; btn.classList.remove('btn-success'); return; }
+          if (!blob) { alert('Error: Could not generate image. Please try again.'); btn.innerHTML = orig; btn.disabled = false; btn.classList.remove('btn-success'); return; }
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url; link.download = filename;
           document.body.appendChild(link); link.click();
           setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 200);
         }, mime, quality);
-        
         setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; btn.classList.remove('btn-success'); }, 2000);
       }
 
