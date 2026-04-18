@@ -617,6 +617,7 @@
       let currentImageURL = null;
       let currentFile = null;
       let bgRemovedBase64 = null; 
+      let lastCompositeURL = null; 
       let isDark = false;
       let bgColor = '#ffffff';
       let previousUnit = 'px';
@@ -662,7 +663,15 @@
       function applyBgColorToImage() {
         if (!bgRemovedBase64) return; 
         compositeTransparentPNG(bgRemovedBase64, bgColor, (compositeURL) => {
-          startCropper(compositeURL, false);
+          if (lastCompositeURL) { URL.revokeObjectURL(lastCompositeURL); }
+          lastCompositeURL = compositeURL;
+
+          if (cropper) {
+            // Replace image without destroying crop box state
+            cropper.replace(compositeURL, true); 
+          } else {
+            startCropper(compositeURL, false);
+          }
         });
       }
 
@@ -698,26 +707,28 @@
         showProcessingOverlay('AI is extracting the subject...');
 
         try {
-          // FIX 1: Fetch the v1.7.0 module via esm.sh to handle all dependencies cleanly
           const module = await import('https://esm.sh/@imgly/background-removal@1.7.0');
-          
-          // FIX 2: Safely grab the function regardless of whether they exported it as 'removeBackground' or 'default'
           const imglyRemoveBackground = module.removeBackground || module.default;
 
           if (!imglyRemoveBackground) {
             throw new Error("Could not locate the AI extraction function.");
           }
 
-          // FIX 3: Call it WITHOUT a config object. 
-          // The v1.7.0 library defaults to its official, high-speed server (staticimgly.com)
-          // to grab the 40MB neural network, completely avoiding the unpkg 404 bugs.
           const transparentBlob = await imglyRemoveBackground(currentFile);
 
           const reader = new FileReader();
           reader.onloadend = () => {
             bgRemovedBase64 = reader.result;
             compositeTransparentPNG(bgRemovedBase64, bgColor, (compositeURL) => {
-              startCropper(compositeURL, false);
+              if (lastCompositeURL) { URL.revokeObjectURL(lastCompositeURL); }
+              lastCompositeURL = compositeURL;
+
+              if (cropper) {
+                cropper.replace(compositeURL, true);
+              } else {
+                startCropper(compositeURL, false);
+              }
+              
               hideProcessingOverlay();
               els.removeBgBtn.disabled = false;
               setStatus('success', '✓ Background removed perfectly! Pick a color below.');
@@ -891,6 +902,7 @@
       function cleanupImageURLs() {
         if (originalImageURL) { URL.revokeObjectURL(originalImageURL); originalImageURL = null; }
         if (currentImageURL && currentImageURL !== originalImageURL) { URL.revokeObjectURL(currentImageURL); currentImageURL = null; }
+        if (lastCompositeURL) { URL.revokeObjectURL(lastCompositeURL); lastCompositeURL = null; }
       }
 
       function startCropper(url, isNewFile = false) {
@@ -1077,13 +1089,9 @@
           const y = dims.marginT + row * (dims.h + dims.gapV);
           if (x + dims.w > pageW + 0.1 || y + dims.h > pageH + 0.1) continue;
 
-          if (bgRemovedBase64) {
-            if (bgColor && bgColor !== 'transparent') {
-              ctx.fillStyle = bgColor;
-              ctx.fillRect(x, y, dims.w, dims.h);
-            }
-          }
+          // Background is already filled natively by getCroppedCanvas
           ctx.drawImage(cropCanvas, x, y, dims.w, dims.h);
+          
           if (showBorder) {
             ctx.save(); ctx.strokeStyle = '#000000'; ctx.lineWidth = 1;
             ctx.strokeRect(x + 0.5, y + 0.5, dims.w - 1, dims.h - 1);
