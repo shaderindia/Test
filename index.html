@@ -9,52 +9,45 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"></noscript>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"></noscript>
   <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"></noscript>
   <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css"></noscript>
 
-  <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/dist/browser/background-removal.js"></script>
-
   <style>
     :root {
       --primary: #6366f1;
       --primary-hover: #4f46e5;
-      --bg-main: #f8fafc;
-      --glass-bg: #ffffff;
-      --glass-border: #e2e8f0;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --bg-gradient: linear-gradient(135deg,#f5f7fa 0%,#c3cfe2 100%);
+      --glass-bg: rgba(255,255,255,0.75);
+      --glass-border: rgba(255,255,255,0.5);
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --shadow: 0 8px 32px 0 rgba(31,38,135,0.15);
       --radius: 16px;
-      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
       --success: #10b981;
       --success-hover: #059669;
-      --error: #ef4444;
     }
     body.dark {
       --primary: #818cf8;
       --primary-hover: #6366f1;
-      --bg-main: #0f172a;
-      --glass-bg: #1e293b;
-      --glass-border: #334155;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+      --bg-gradient: linear-gradient(135deg,#1f2937 0%,#111827 100%);
+      --glass-bg: rgba(17,24,39,0.8);
+      --glass-border: rgba(148,163,184,0.35);
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --shadow: 0 12px 32px 0 rgba(0,0,0,0.6);
     }
-    
     * { box-sizing:border-box; margin:0; padding:0; }
-    html,body { max-width:100%; overflow-x:hidden; scroll-behavior: smooth; }
+    html,body { max-width:100%; overflow-x:hidden; }
     html { -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; }
     body {
       font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-      background:var(--bg-main);
+      background:var(--bg-gradient);
+      background-attachment:fixed;
       color:var(--text-main);
       min-height:100vh;
       display:flex;
@@ -63,250 +56,281 @@
       -moz-osx-font-smoothing:grayscale;
       transition:background .3s,color .3s;
     }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border-width:0; }
 
-    /* ── SaaS Header ── */
     .header-glass {
       background:var(--glass-bg);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
       border-bottom:1px solid var(--glass-border);
-      padding:clamp(.75rem,2vw,1.25rem) clamp(1.2rem,3vw,2.5rem);
+      padding:clamp(.75rem,2vw,1.5rem) clamp(1rem,3vw,2rem);
       display:flex;
       justify-content:space-between;
       align-items:center;
       position:sticky;
       top:0;
       z-index:100;
-      box-shadow:var(--shadow-sm);
+      box-shadow:var(--shadow);
       flex-wrap:wrap;
       gap:1rem;
-      transition: var(--transition);
     }
     .header-content { flex:1; min-width:0; }
-    .header-title { font-size:clamp(1.1rem,4vw,1.4rem); font-weight:700; color:var(--primary); display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; letter-spacing: -0.02em; }
-    .header-title i { padding:.4rem; border-radius:10px; background:rgba(99,102,241,0.1); font-size: 1.1rem; }
-    .header-badge { background: linear-gradient(135deg, var(--primary), #8b5cf6); color:#fff; font-size:.7rem; font-weight: 600; padding:.15rem .5rem; border-radius:999px; letter-spacing: 0.02em; }
-    .header-sub { font-size:clamp(.8rem,2vw,.85rem); color:var(--text-muted); margin-top:.25rem; font-weight: 500; }
+    .header-title { font-size:clamp(1.2rem,4vw,1.6rem); font-weight:700; color:var(--primary); display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+    .header-title i { padding:.35rem; border-radius:999px; background:rgba(99,102,241,0.12); }
+    .header-badge { background:var(--primary); color:#fff; font-size:.75rem; padding:.1rem .45rem; border-radius:999px; }
+    .header-sub { font-size:clamp(.8rem,2vw,.9rem); color:var(--text-muted); margin-top:.25rem; }
     .header-nav { display:flex; gap:.5rem; }
     .nav-btn {
-      background:transparent; border:none; color:var(--text-muted); font-size:1.1rem; cursor:pointer;
-      padding:.5rem; border-radius:10px; transition:var(--transition);
-      min-height:40px; min-width:40px; display:inline-flex; align-items:center; justify-content:center;
+      background:transparent; border:none; color:var(--text-main); font-size:1.2rem; cursor:pointer;
+      padding:.5rem; border-radius:999px; transition:background .15s,transform .07s;
+      min-height:44px; min-width:44px; display:inline-flex; align-items:center; justify-content:center;
     }
-    .nav-btn:hover { background:var(--bg-main); color: var(--primary); }
+    .nav-btn:hover { background:rgba(0,0,0,0.05); }
+    body.dark .nav-btn:hover { background:rgba(255,255,255,0.1); }
     .nav-btn:active { transform:scale(0.94); }
 
-    main { flex:1; padding:clamp(1.5rem,4vw,3rem) clamp(1rem,3vw,2rem); max-width:1000px; margin:0 auto; width:100%; }
+    main { flex:1; padding:clamp(1rem,3vw,2rem); max-width:1200px; margin:0 auto; width:100%; }
     .text-center { text-align:center; }
-    .text-lg { font-size:clamp(1rem,2.5vw,1.1rem); line-height: 1.6; color: var(--text-muted); }
-    .mb-8 { margin-bottom:clamp(1.5rem,4vw,2.5rem); }
+    .text-lg { font-size:clamp(1rem,2.5vw,1.1rem); }
+    .mb-8 { margin-bottom:clamp(1rem,3vw,2rem); }
 
-    /* ── Cards ── */
     .card {
       background:var(--glass-bg);
+      backdrop-filter:blur(14px);
+      -webkit-backdrop-filter:blur(14px);
       border:1px solid var(--glass-border);
       border-radius:var(--radius);
-      padding:clamp(1.5rem,4vw,2.5rem);
-      margin-bottom:clamp(1.5rem,4vw,2.5rem);
-      box-shadow:var(--shadow-md);
-      transition: var(--transition);
+      padding:clamp(1.5rem,3vw,2rem);
+      margin-bottom:clamp(1.5rem,3vw,2rem);
+      box-shadow:var(--shadow);
     }
-    h2 { font-size:clamp(1.1rem,3vw,1.25rem); font-weight: 600; margin-bottom:1.5rem; color:var(--text-main); border-bottom:1px solid var(--glass-border); padding-bottom:.75rem; display:flex; align-items:center; gap:.6rem; }
-    h2 i { font-size:1.1rem; color: var(--primary); }
-    h3 { font-size:clamp(.9rem,2.5vw,.95rem); margin-bottom:1rem; color:var(--text-main); font-weight:600; letter-spacing: 0.01em; text-transform: uppercase; opacity: 0.8; }
+    h2 { font-size:clamp(1.1rem,3vw,1.25rem); margin-bottom:1.3rem; color:var(--primary); border-bottom:1px solid var(--glass-border); padding-bottom:.55rem; display:flex; align-items:center; gap:.5rem; }
+    h2 i { font-size:1rem; }
+    h3 { font-size:clamp(.95rem,2.5vw,1rem); margin-bottom:.85rem; color:var(--text-main); font-weight:600; }
 
-    /* ── Upload Area ── */
     .upload-wrapper { width:100%; max-width:100%; overflow:hidden; }
     .upload-area {
-      border:2px dashed var(--glass-border); border-radius:var(--radius);
-      padding:clamp(3rem,6vw,4rem) clamp(1rem,3vw,2rem);
-      text-align:center; cursor:pointer; transition:var(--transition);
-      background: var(--bg-main); position:relative; width:100%; max-width:100%;
+      border:2px dashed var(--primary); border-radius:var(--radius);
+      padding:clamp(2rem,5vw,3rem) clamp(1rem,3vw,2rem);
+      text-align:center; cursor:pointer; transition:background .2s,border-color .2s,transform .07s;
+      position:relative; width:100%; max-width:100%;
     }
-    .upload-area:hover { background:rgba(99,102,241,.03); border-color:var(--primary); }
-    .upload-area:active { transform:scale(.99); }
-    .upload-placeholder i { color:var(--primary); margin-bottom:1rem; font-size:clamp(2.5rem,5vw,3rem); opacity: 0.9; }
-    .upload-placeholder p { font-size:clamp(.95rem,2.5vw,1.05rem); color:var(--text-main); font-weight: 500; margin-bottom: 0.5rem; }
-    .upload-placeholder span { font-size: 0.85rem; color: var(--text-muted); }
+    .upload-area:hover { background:rgba(99,102,241,.04); border-color:var(--primary-hover); }
+    .upload-area:active { transform:scale(.97); }
+    .upload-placeholder i { color:var(--primary); margin-bottom:1rem; font-size:clamp(2rem,5vw,2.7rem); }
+    .upload-placeholder p { font-size:clamp(.9rem,2.5vw,1rem); color:var(--text-muted); }
     #photo-upload { display:none; }
 
-    /* ── Sample Guide ── */
-    .sample-guide {
-      margin-top: 1.5rem; background: var(--bg-main); border: 1px solid var(--glass-border);
-      border-radius: 12px; padding: 1.5rem; transition: opacity 0.3s ease;
-    }
-    .sample-guide-title { font-size: .95rem; font-weight: 600; color: var(--text-main); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-    .sample-guide-title i { color: #eab308; }
-    .sample-content { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
-    .sample-image-box {
-      width: 110px; height: 146px; border-radius: 8px; overflow: hidden;
-      box-shadow: var(--shadow-md); position: relative; flex-shrink: 0;
-      border: 3px solid #fff;
-    }
-    body.dark .sample-image-box { border-color: var(--glass-bg); }
-    .sample-image-box img { width: 100%; height: 100%; object-fit: cover; }
-    .sample-badge {
-      position: absolute; bottom: 6px; right: 6px; background: var(--success); color: #fff;
-      width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      font-size: 0.7rem; box-shadow: var(--shadow-sm);
-    }
-    .sample-rules { list-style: none; padding: 0; flex: 1; min-width: 200px; }
-    .sample-rules li { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.6rem; font-weight: 500;}
-    .text-success { color: var(--success); font-size: 1rem; }
-    .text-error { color: var(--error); font-size: 1rem; }
-
-    /* ── Editor & Toolbar ── */
     #editor-container { margin-top:1.5rem; }
-    .editor-toolbar-wrapper { padding:0 0 1.2rem; width:100%; overflow:hidden; }
-    .editor-toolbar { display:flex; gap:.75rem; flex-wrap:wrap; align-items:center; }
+    .editor-toolbar-wrapper { padding:0 .5rem 1rem; width:100%; overflow:hidden; }
+    .editor-toolbar { display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap; align-items:center; }
 
     .ai-bg-panel {
-      background: var(--bg-main); border: 1px solid var(--glass-border); border-radius: 12px;
-      padding: 1.2rem 1.5rem; margin-bottom: 1.5rem; animation: fadeIn 0.4s ease-out;
+      background: rgba(99,102,241,0.06);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+      animation: fadeIn 0.4s ease-in-out;
     }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
-    .ai-bg-panel-title { font-size: .95rem; font-weight: 600; color: var(--text-main); margin-bottom: 1rem; display: flex; align-items: center; gap: .5rem; }
-    .ai-bg-panel-title i { color: var(--primary); }
-    .bg-controls-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-    .color-swatches { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; border-left: 1px solid var(--glass-border); padding-left: 1rem;}
-    @media(max-width: 600px) { .color-swatches { border-left: none; padding-left: 0; width: 100%; } }
-    .color-swatch { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: var(--transition); flex-shrink: 0; box-shadow: var(--shadow-sm); }
-    .color-swatch:hover { transform: scale(1.1); box-shadow: var(--shadow-md); }
-    .color-swatch.active { border-color: var(--primary); transform: scale(1.1); box-shadow: 0 0 0 2px var(--bg-main), 0 0 0 4px var(--primary); }
+    .ai-bg-panel-title {
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: .75rem;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+    }
+    .ai-bg-panel-title i { font-size: .9rem; }
+    .bg-controls-row {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      flex-wrap: wrap;
+    }
+    .color-swatches {
+      display: flex;
+      gap: .4rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .color-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform .12s, border-color .12s;
+      flex-shrink: 0;
+    }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.active { border-color: var(--primary); transform: scale(1.1); }
     .color-swatch.checkered {
-      background-image: linear-gradient(45deg,#cbd5e1 25%,transparent 25%),linear-gradient(-45deg,#cbd5e1 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cbd5e1 75%),linear-gradient(-45deg,transparent 75%,#cbd5e1 75%);
-      background-size: 10px 10px; background-position: 0 0,0 5px,5px -5px,-5px 0;
+      background-image: linear-gradient(45deg,#ccc 25%,transparent 25%),linear-gradient(-45deg,#ccc 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ccc 75%),linear-gradient(-45deg,transparent 75%,#ccc 75%);
+      background-size: 8px 8px;
+      background-position: 0 0,0 4px,4px -4px,-4px 0;
     }
-    .color-picker-wrapper { width:32px; height:32px; border-radius:50%; overflow:hidden; border:1px solid var(--glass-border); cursor:pointer; position:relative; flex-shrink:0; box-shadow: var(--shadow-sm); }
-    #bg-color-picker { width:150%; height:150%; position:absolute; top:-25%; left:-25%; border:none; padding:0; cursor:pointer; }
-    
+    .color-picker-wrapper {
+      width:32px; height:32px; border-radius:50%; overflow:hidden;
+      border:2px solid var(--glass-border); cursor:pointer; position:relative; flex-shrink:0;
+    }
+    #bg-color-picker {
+      width:150%; height:150%; position:absolute; top:-25%; left:-25%; border:none; padding:0; cursor:pointer;
+    }
     .ai-remove-btn {
-      display: inline-flex; align-items: center; gap: .5rem; padding: .6rem 1.2rem; border-radius: 10px; border: none; cursor: pointer;
-      font-size: .9rem; font-weight: 600; background: var(--text-main); color: var(--bg-main);
-      transition: var(--transition); box-shadow: var(--shadow-md); white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .45rem 1rem;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-size: .85rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff;
+      transition: opacity .15s, transform .07s;
+      min-height: 36px;
+      white-space: nowrap;
     }
-    body.dark .ai-remove-btn { background: var(--primary); color: #fff; }
-    .ai-remove-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); opacity: 0.9; }
+    .ai-remove-btn:hover { opacity: .9; }
     .ai-remove-btn:active { transform: scale(.97); }
-    .ai-remove-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
-    
-    .crop-container { max-height:500px; background:var(--bg-main); border: 1px solid var(--glass-border); border-radius:12px; overflow:hidden; position:relative; margin-bottom:1.5rem; }
+    .ai-remove-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .ai-status-msg {
+      font-size: .8rem;
+      color: var(--text-muted);
+      margin-top: .5rem;
+      min-height: 1.2em;
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+    }
+    .ai-status-msg.error { color: #ef4444; }
+    .ai-status-msg.success { color: var(--success); }
+    .spinner-sm {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(99,102,241,.25);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .crop-container { max-height:500px; background:#000; border-radius:12px; overflow:hidden; position:relative; margin-bottom:1rem; }
     #image-to-crop { max-width:100%; display:block; }
 
     .processing-overlay {
-      position:absolute; inset:0; background:rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center;
-      z-index:20; font-weight: 500; font-size: 0.95rem; gap: 1rem;
+      position:absolute; inset:0; background:rgba(0,0,0,.68); color:#fff;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      border-radius:var(--radius); z-index:20;
     }
-    .spinner { width:40px; height:40px; border:3px solid rgba(255,255,255,.2); border-top-color:#fff; border-radius:50%; animation:spin 0.8s linear infinite; }
-    @keyframes spin { to { transform:rotate(360deg); } }
+    .spinner { width:38px; height:38px; border:4px solid rgba(255,255,255,.28); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:1rem; }
 
-    /* ── Forms & Settings ── */
-    .split-view { display:grid; grid-template-columns:1fr 1fr; gap:clamp(1.5rem,4vw,3rem); }
-    .settings-group { margin-bottom:1.5rem; }
-    .form-row { display:flex; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; }
-    .form-group { flex:1; display:flex; flex-direction:column; min-width:140px; }
-    .form-group label { font-size:.8rem; margin-bottom:.4rem; color:var(--text-muted); font-weight: 600; }
+    .pulse-effect { animation:gentle-pulse 1.2s ease-in-out 3; }
+    @keyframes gentle-pulse {
+      0% { transform:scale(1); box-shadow:none; }
+      50% { transform:scale(1.01); box-shadow:0 0 18px rgba(129,140,248,.4); }
+      100% { transform:scale(1); box-shadow:none; }
+    }
 
-    /* Premium SaaS Inputs */
+    .split-view { display:grid; grid-template-columns:1.05fr .95fr; gap:clamp(1rem,3vw,2rem); }
+    .settings-group { margin-bottom:1.3rem; padding-bottom:1.3rem; border-bottom:1px solid var(--glass-border); }
+    .settings-group:last-child { border-bottom:none; }
+    .form-row { display:flex; gap:1rem; margin-bottom:.9rem; flex-wrap:wrap; }
+    .form-group { flex:1; display:flex; flex-direction:column; min-width:0; }
+    .form-group label { font-size:.85rem; margin-bottom:.35rem; color:var(--text-muted); }
+
     input[type="number"], select {
-      background: var(--glass-bg); border: 1px solid var(--glass-border); padding: .65rem .8rem; border-radius: 10px; color: var(--text-main);
-      font-family: inherit; font-size: .95rem !important; width: 100%; min-width: 0; box-shadow: var(--shadow-sm);
-      transition: var(--transition); appearance: none;
+      background:rgba(255,255,255,.75); border:1px solid var(--glass-border);
+      padding:.5rem .55rem; border-radius:8px; color:var(--text-main);
+      font-family:inherit; font-size:16px !important; width:100%; min-width:0;
+      transition:border-color .16s,box-shadow .16s,background .16s;
     }
-    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem; padding-right: 2.5rem; }
-    body.dark select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); }
-    input[type="number"]:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+    body.dark input[type="number"], body.dark select { background:rgba(17,24,39,.8); }
+    input[type="number"]:focus, select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 1px rgba(99,102,241,.55); }
 
-    .checkbox-row { display:flex; flex-wrap:wrap; gap:1rem 1.5rem; margin-top:.5rem; padding: 1rem; background: var(--bg-main); border-radius: 10px; border: 1px solid var(--glass-border); }
-    .checkbox-item { display:flex; align-items:center; gap:.5rem; font-size:.85rem; color:var(--text-main); font-weight: 500; cursor: pointer; }
-    .checkbox-item input[type="checkbox"] { width: 16px; height: 16px; border-radius: 4px; accent-color: var(--primary); cursor: pointer; }
+    .checkbox-row { display:flex; flex-wrap:wrap; gap:.75rem 1.2rem; margin-top:.25rem; }
+    .checkbox-item { display:flex; align-items:center; gap:.4rem; font-size:.85rem; color:var(--text-muted); }
 
-    /* ── Buttons ── */
     .btn-main, .btn-secondary {
-      padding:.65rem 1.2rem; border-radius:10px; border:none; cursor:pointer; font-weight:600; font-size:.9rem; display:inline-flex; gap:.5rem;
-      align-items:center; justify-content:center; min-height:44px; transition:var(--transition); white-space:nowrap; letter-spacing: 0.01em;
+      padding:.6rem 1.2rem; border-radius:999px; border:none; cursor:pointer;
+      font-weight:600; font-size:.9rem; display:inline-flex; gap:.5rem;
+      align-items:center; justify-content:center; min-height:44px; min-width:44px;
+      transition:var(--transition); white-space:nowrap;
     }
-    .btn-main { background:var(--primary); color:#fff; box-shadow:var(--shadow-md); }
-    .btn-main:hover { background:var(--primary-hover); transform:translateY(-1px); box-shadow:var(--shadow-lg); }
-    .btn-main:active { transform:translateY(0) scale(.97); box-shadow:var(--shadow-sm); }
-    .btn-main:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
-    
-    .btn-secondary { background:var(--bg-main); color:var(--text-main); border:1px solid var(--glass-border); box-shadow: var(--shadow-sm); }
-    .btn-secondary:hover { background:var(--glass-bg); border-color: var(--text-muted); transform:translateY(-1px); }
-    .btn-secondary:active { transform:translateY(0) scale(.97); }
+    .btn-main { background:var(--primary); color:#fff; box-shadow:0 10px 25px rgba(79,70,229,.35); }
+    .btn-main:hover { background:var(--primary-hover); transform:translateY(-1px); box-shadow:0 16px 35px rgba(79,70,229,.45); }
+    .btn-main:active { transform:translateY(0) scale(.98); box-shadow:0 8px 20px rgba(79,70,229,.35); }
+    .btn-secondary { background:rgba(255,255,255,.9); color:var(--text-main); border:1px solid var(--glass-border); }
+    body.dark .btn-secondary { background:rgba(17,24,39,.85); }
+    .btn-secondary:hover { background:#fff; transform:translateY(-1px); }
+    body.dark .btn-secondary:hover { background:rgba(31,41,55,1); }
+    .btn-success { background:var(--success) !important; box-shadow:0 10px 28px rgba(16,185,129,.45) !important; }
+    .btn-success:hover { background:var(--success-hover) !important; }
 
-    #confirm-crop-btn { background: linear-gradient(135deg, #10b981, #059669); font-size: 1rem; padding: 0.8rem; border-radius: 12px; }
-    #confirm-crop-btn:hover { background: linear-gradient(135deg, #059669, #047857); }
+    .btn-pill-group { display:flex; flex-wrap:wrap; gap:.5rem; }
 
-    .btn-pill-group { display:flex; flex-wrap:wrap; gap:.75rem; margin-bottom: 1.5rem; }
-
-    /* ── Print Preview ── */
     .preview-panel { display:flex; flex-direction:column; }
     .canvas-wrapper {
-      background:var(--bg-main); border:1px solid var(--glass-border); border-radius:12px;
-      overflow:hidden; margin-bottom:1.5rem; min-height:350px; display:flex; align-items:center; justify-content:center; padding:1.5rem;
-      box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+      background:#e5e7eb; border:1px solid var(--glass-border); border-radius:12px;
+      overflow:hidden; margin-bottom:1rem; min-height:300px;
+      display:flex; align-items:center; justify-content:center; padding:1rem;
     }
-    #output-canvas { display:block; max-width:100%; height:auto !important; box-shadow:0 8px 24px -4px rgba(0, 0, 0, 0.15); border-radius:4px; background: #fff; }
+    body.dark .canvas-wrapper { background:#111827; }
+    #output-canvas { display:block; max-width:100%; height:auto !important; box-shadow:0 4px 10px rgba(15,23,42,.45); border-radius:4px; }
 
-    .download-actions { display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; background: var(--bg-main); padding: 1.2rem; border-radius: 12px; border: 1px solid var(--glass-border); }
-    .download-actions .form-group { margin-bottom: 0; min-width: 90px; flex: 0 1 auto; }
-    .download-actions .btn-main { flex: 1; }
+    .download-actions { display:flex; gap:.75rem; flex-wrap:wrap; align-items:center; }
+    .download-actions select { width:auto; min-width:90px; }
 
     .hidden { display:none !important; }
 
-    /* ── Footer ── */
-    footer { text-align:center; padding:clamp(2rem,4vw,3rem); color:var(--text-muted); font-size:.85rem; border-top: 1px solid var(--glass-border); background: var(--glass-bg); margin-top: auto; }
-    footer a { color:var(--text-main); font-weight: 500; text-decoration:none; transition:var(--transition); }
-    footer a:hover { color:var(--primary); }
-    .footer-links { display:flex; flex-wrap:wrap; justify-content:center; gap:1.5rem; margin: 1rem 0; }
+    footer { text-align:center; padding:clamp(1.5rem,3vw,2rem); color:var(--text-muted); font-size:.9rem; }
+    footer a { color:var(--primary); text-decoration:none; transition:color .16s; }
+    footer a:hover { color:var(--primary-hover); }
+    .footer-links { display:flex; flex-wrap:wrap; justify-content:center; gap:.9rem; margin: .6rem 0; }
 
-    /* ── Custom Toast Notifications ── */
-    #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-    .toast {
-      background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main);
-      padding: 14px 20px; border-radius: 12px; box-shadow: var(--shadow-lg);
-      display: flex; align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 500;
-      transform: translateY(100px); opacity: 0; animation: toastSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      pointer-events: auto; max-width: 350px;
-    }
-    .toast.toast-error i { color: var(--error); font-size: 1.2rem; }
-    .toast.toast-success i { color: var(--success); font-size: 1.2rem; }
-    .toast.toast-info i { color: var(--primary); font-size: 1.2rem; }
-    .toast.fade-out { animation: toastFadeOut 0.3s ease forwards; }
-    @keyframes toastSlideIn { to { transform: translateY(0); opacity: 1; } }
-    @keyframes toastFadeOut { to { opacity: 0; transform: scale(0.95); } }
-
-    /* ── Modals ── */
-    .modal-glass { position:fixed; inset:0; background:rgba(15,23,42,.6); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:1000; display:none; justify-content:center; align-items:center; opacity: 0; transition: opacity 0.3s ease; }
-    .modal-glass.active { display:flex; opacity: 1; }
+    .modal-glass { position:fixed; inset:0; background:rgba(15,23,42,.6); backdrop-filter:blur(4px); z-index:1000; display:none; justify-content:center; align-items:center; }
+    .modal-glass.active { display:flex; }
     .modal-content {
-      background:var(--glass-bg); padding:2rem; border-radius:20px; max-width:500px; width:90%; max-height:90vh; overflow-y:auto;
-      position:relative; box-shadow:var(--shadow-lg); border:1px solid var(--glass-border); font-size:.95rem; line-height: 1.6;
-      transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      background:var(--glass-bg); padding:1.75rem 1.9rem; border-radius:18px;
+      max-width:480px; width:90%; max-height:90vh; overflow-y:auto;
+      position:relative; box-shadow:var(--shadow); border:1px solid var(--glass-border); font-size:.9rem;
     }
-    .modal-glass.active .modal-content { transform: scale(1); }
-    .modal-content h2 { border:none; padding-bottom:.5rem; margin-bottom:1rem; }
-    .modal-content ul { padding-left:1.5rem; margin-bottom: 1rem; color: var(--text-muted); }
-    .modal-content li { margin-bottom:.6rem; }
+    .modal-content h2 { border:none; padding-bottom:.25rem; margin-bottom:.75rem; }
+    .modal-content ul { padding-left:1.1rem; }
+    .modal-content li { margin-bottom:.4rem; }
     .close-btn {
-      position:absolute; top:1rem; right:1rem; background:var(--bg-main); border:1px solid var(--glass-border); cursor:pointer; color:var(--text-muted); padding:.5rem; border-radius:50%;
-      height:36px; width:36px; display:flex; align-items:center; justify-content:center; transition:var(--transition);
+      position:absolute; top:.8rem; right:.8rem; background:none; border:none; cursor:pointer;
+      color:var(--text-muted); padding:.4rem; border-radius:999px;
+      min-height:32px; min-width:32px; display:flex; align-items:center; justify-content:center; transition:background .15s;
     }
-    .close-btn:hover { background:var(--glass-border); color: var(--text-main); }
+    .close-btn:hover { background:rgba(148,163,184,.25); }
 
     @media (max-width: 900px) { .split-view { grid-template-columns:1fr; } }
     @media (max-width:768px) {
-      .header-glass { flex-direction:column; align-items:flex-start; padding: 1rem; }
+      .header-glass { flex-direction:column; align-items:flex-start; }
       .header-content { width:100%; }
-      .header-nav { width:100%; justify-content:flex-end; border-top: 1px solid var(--glass-border); padding-top: 0.8rem; margin-top: 0.5rem; }
+      .header-nav { width:100%; justify-content:flex-end; }
       main { padding:1rem; }
-      .card { padding:1.5rem; }
-      .upload-area { padding:2.5rem 1rem; }
+      .card { padding:1.4rem; }
+      .upload-area { padding:1.9rem 1rem; }
+      .editor-toolbar { justify-content:flex-start; }
       .download-actions { flex-direction:column; align-items:stretch; }
-      .download-actions .form-group { width:100%; }
-      #toast-container { bottom: 16px; left: 16px; right: 16px; align-items: center;}
-      .toast { width: 100%; max-width: 100%; }
+      .download-actions > * { width:100%; }
     }
+    @media (max-width:480px) {
+      .header-title { font-size:1.1rem; }
+      .upload-area { padding:1.5rem .65rem; }
+      .btn-main,.btn-secondary { font-size:.85rem; padding:.5rem 1rem; }
+    }
+
+    img { max-width:100%; height:auto; }
+    button, .nav-btn, .btn-main, .btn-secondary, .close-btn { touch-action:manipulation; }
+    input[type="text"], input[type="number"], input[type="email"], input[type="tel"], input[type="password"], textarea, select { font-size:16px !important; }
   </style>
 </head>
 
@@ -318,60 +342,47 @@
         Passport Photo Maker
         <span class="header-badge">Pro AI</span>
       </h1>
-      <div class="header-sub">Create, crop, and print passport photos instantly. Zero server uploads.</div>
+      <div class="header-sub">Create, crop, and print passport photos — ultra-smooth, mobile friendly, and completely free.</div>
     </div>
     <div class="header-nav">
+      <a href="/" class="nav-btn" title="Back to Home" aria-label="Back to Home"><i class="fa fa-home"></i></a>
       <button class="nav-btn" id="theme-btn" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="fa fa-moon"></i></button>
-      <button class="nav-btn" id="info-btn" title="How to use" aria-label="How to use"><i class="fa fa-question-circle"></i></button>
+      <button class="nav-btn" id="info-btn" title="How to use" aria-label="How to use"><i class="fa fa-info-circle"></i></button>
     </div>
   </header>
 
   <main>
-    <section class="card" id="upload-card">
-      <h2><i class="fa fa-cloud-upload-alt"></i> 1. Upload &amp; Edit</h2>
+    <p class="text-center text-lg mb-8">
+      Welcome to the <strong>free online passport photo maker</strong>! Upload, crop, format and
+      <strong>print passport photos</strong> with pro-level layout — right from your browser.
+    </p>
+
+    <section class="card">
+      <h2><i class="fa fa-image"></i> 1. Upload &amp; Edit</h2>
 
       <div class="upload-wrapper">
         <div class="upload-area" id="upload-area" role="button" tabindex="0" aria-label="Upload photo area">
           <div class="upload-placeholder">
-            <i class="fa fa-image"></i>
-            <p>Click or Drag &amp; Drop to Upload</p>
-            <span>Supports JPG, PNG, HEIC, WEBP (Max 25MB)</span>
+            <i class="fa fa-cloud-upload-alt fa-3x"></i>
+            <p>Click or Drag &amp; Drop to Upload Photo</p>
           </div>
           <input type="file" id="photo-upload" accept="image/*,.webp,.bmp,.tif,.tiff,.avif,.heic,.heif" aria-label="Upload your photo">
         </div>
       </div>
 
-      <div id="sample-guide" class="sample-guide">
-        <div class="sample-guide-title">
-          <i class="fa fa-lightbulb"></i> Perfect Passport Photo Checklist
-        </div>
-        <div class="sample-content">
-          <div class="sample-image-box">
-            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=240&h=320&q=80" alt="Sample perfect passport photo">
-            <div class="sample-badge"><i class="fa fa-check"></i></div>
-          </div>
-          <ul class="sample-rules">
-            <li><i class="fa fa-check-circle text-success"></i> Look straight at the camera</li>
-            <li><i class="fa fa-check-circle text-success"></i> Keep a neutral expression</li>
-            <li><i class="fa fa-check-circle text-success"></i> Ensure good, even lighting</li>
-            <li><i class="fa fa-times-circle text-error"></i> Do not wear glasses or hats</li>
-            <li><i class="fa fa-times-circle text-error"></i> Avoid harsh shadows on your face</li>
-          </ul>
-        </div>
-      </div>
-
       <div id="editor-container" class="hidden">
+        
         <div class="editor-toolbar-wrapper">
           <div class="editor-toolbar">
             <button class="btn-secondary" id="change-photo-btn" type="button">
-              <i class="fa fa-folder-open"></i> Replace
+              <i class="fa fa-image"></i> Change
             </button>
-            <button class="btn-secondary" id="autofix-btn" type="button">
-              <i class="fa fa-expand"></i> Smart Fit
+            <button class="btn-main" id="autofix-btn" type="button" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); box-shadow: 0 4px 12px rgba(99,102,241,0.25);">
+              <i class="fa fa-user-check"></i> Smart Auto-Crop
             </button>
             <button class="btn-secondary" id="rotate-left" type="button" title="Rotate left"><i class="fa fa-undo"></i></button>
             <button class="btn-secondary" id="rotate-right" type="button" title="Rotate right"><i class="fa fa-redo"></i></button>
-            <button class="btn-secondary" id="reset-crop" type="button" title="Reset original"><i class="fa fa-trash-restore"></i> Reset</button>
+            <button class="btn-secondary" id="reset-crop" type="button" title="Reset original"><i class="fa fa-sync"></i></button>
           </div>
         </div>
 
@@ -379,57 +390,60 @@
           <img id="image-to-crop" src="" alt="Image to crop">
           <div id="bg-processing" class="processing-overlay hidden" aria-hidden="true">
             <div class="spinner"></div>
-            <p id="processing-msg">Processing...</p>
+            <p id="processing-msg">Removing background...</p>
           </div>
         </div>
 
-        <button id="confirm-crop-btn" class="btn-main" style="width: 100%; margin-bottom: 1rem;">
+        <button id="confirm-crop-btn" class="btn-main" style="width: 100%; margin-bottom: 1rem; font-size: 1.05rem; padding: 0.8rem;">
           <i class="fa fa-crop-simple"></i> Confirm Crop &amp; Proceed
         </button>
 
         <div class="ai-bg-panel hidden" id="ai-bg-panel">
           <div class="ai-bg-panel-title">
             <i class="fa fa-wand-magic-sparkles"></i>
-            Pro Background Editor
+            AI Background Removal &amp; Color
+            <span style="font-size:.72rem;font-weight:400;color:var(--text-muted);margin-left:.4rem;">powered by Off-Thread AI</span>
           </div>
           <div class="bg-controls-row">
             <button class="ai-remove-btn" id="remove-bg-btn" type="button">
-              <i class="fa fa-eraser"></i> Erase Background
+              <i class="fa fa-magic"></i> Remove Background
             </button>
             <div class="color-swatches" id="color-swatches"></div>
             <div class="color-picker-wrapper" title="Custom color">
               <input type="color" id="bg-color-picker" value="#ffffff" aria-label="Custom background color">
             </div>
           </div>
+          <div class="ai-status-msg" id="ai-status"></div>
         </div>
+
       </div>
     </section>
 
     <section class="card hidden" id="settings-section">
-      <h2><i class="fa fa-print"></i> 2. Print Layout &amp; Export</h2>
+      <h2><i class="fa fa-sliders-h"></i> 2. Settings &amp; Print Preview</h2>
       <div class="split-view">
         <div class="controls-panel">
           <div class="settings-group">
-            <h3>Quick Setup</h3>
+            <h3>Layout Helpers</h3>
             <div class="btn-pill-group">
-              <button class="btn-secondary" id="max-photos-btn" type="button" style="width: 100%;">
-                <i class="fa fa-th"></i> Auto-Fill Maximum Photos
+              <button class="btn-secondary" id="max-photos-btn" type="button">
+                <i class="fa fa-th"></i> Max Photos Per Page
               </button>
             </div>
           </div>
           <div class="settings-group">
-            <h3>Dimensions &amp; Quality</h3>
+            <h3>Photo &amp; DPI</h3>
             <div class="form-row">
               <div class="form-group">
-                <label for="unit">Measurement Unit</label>
+                <label for="unit">Unit</label>
                 <select id="unit">
-                  <option value="px">Pixels (px)</option>
-                  <option value="mm">Millimeters (mm)</option>
-                  <option value="inch">Inches (in)</option>
+                  <option value="px">px</option>
+                  <option value="mm">mm</option>
+                  <option value="inch">inch</option>
                 </select>
               </div>
               <div class="form-group">
-                <label for="dpi">Print Resolution (DPI)</label>
+                <label for="dpi">DPI (print)</label>
                 <input type="number" id="dpi" value="300" min="72" max="1200" step="1">
               </div>
             </div>
@@ -445,79 +459,79 @@
             </div>
           </div>
           <div class="settings-group">
-            <h3>Canvas Layout</h3>
+            <h3>Paper &amp; Layout</h3>
             <div class="form-row">
               <div class="form-group">
-                <label for="page-size">Target Paper Size</label>
+                <label for="page-size">Paper Size</label>
                 <select id="page-size">
-                  <option value="a4">A4 Sheet (210 × 297 mm)</option>
-                  <option value="4r">4R Photo (4" × 6")</option>
-                  <option value="custom">Custom Size...</option>
+                  <option value="a4">A4 (210 × 297 mm)</option>
+                  <option value="4r">4R (4" × 6")</option>
+                  <option value="custom">Custom</option>
                 </select>
               </div>
               <div class="form-group">
-                <label for="num-photos">Number of Copies</label>
+                <label for="num-photos">Photo Count</label>
                 <input type="number" id="num-photos" value="8" min="1" max="200" step="1">
               </div>
             </div>
             <div class="form-row hidden" id="custom-page-size">
               <div class="form-group">
-                <label for="custom-width">Paper Width</label>
+                <label for="custom-width">Custom Width</label>
                 <input type="number" id="custom-width" placeholder="Width" min="1">
               </div>
               <div class="form-group">
-                <label for="custom-height">Paper Height</label>
+                <label for="custom-height">Custom Height</label>
                 <input type="number" id="custom-height" placeholder="Height" min="1">
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label for="h-spacing">Horizontal Gap</label>
+                <label for="h-spacing">Gap Horizontal</label>
                 <input type="number" id="h-spacing" value="35" min="0" step="1">
               </div>
               <div class="form-group">
-                <label for="v-spacing">Vertical Gap</label>
+                <label for="v-spacing">Gap Vertical</label>
                 <input type="number" id="v-spacing" value="35" min="0" step="1">
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label for="margin-top">Top Canvas Margin</label>
+                <label for="margin-top">Top Margin</label>
                 <input type="number" id="margin-top" value="35" min="0" step="1">
               </div>
               <div class="form-group">
-                <label for="margin-left">Left Canvas Margin</label>
+                <label for="margin-left">Left Margin</label>
                 <input type="number" id="margin-left" value="35" min="0" step="1">
               </div>
             </div>
             <div class="checkbox-row">
               <label class="checkbox-item">
                 <input type="checkbox" id="show-cutlines">
-                <span>Print Scissor Cutlines</span>
+                <span>Show Cutlines (around each photo)</span>
               </label>
               <label class="checkbox-item">
                 <input type="checkbox" id="add-border">
-                <span>Add Solid Photo Borders</span>
+                <span>Add Solid Border</span>
               </label>
             </div>
           </div>
         </div>
 
         <div class="preview-panel">
-          <h3>Live Print Preview</h3>
+          <h3>Print Preview (scale-accurate, not squeezed)</h3>
           <div class="canvas-wrapper">
             <canvas id="output-canvas" aria-label="Print preview canvas"></canvas>
           </div>
           <div class="download-actions">
-            <div class="form-group">
-              <label for="format">Format</label>
+            <div class="form-group" style="max-width:120px;">
+              <label for="format">Download Format</label>
               <select id="format">
-                <option value="jpg">JPG (Best for Print)</option>
-                <option value="png">PNG (Lossless)</option>
+                <option value="jpg">JPG</option>
+                <option value="png">PNG</option>
               </select>
             </div>
-            <button class="btn-main" id="download-btn" type="button"><i class="fa fa-download"></i> Standard Export</button>
-            <button class="btn-main" id="download-hq-btn" type="button" style="background: var(--text-main); color: var(--bg-main);"><i class="fa fa-crown"></i> HD Export</button>
+            <button class="btn-main" id="download-btn" type="button"><i class="fa fa-download"></i> Download</button>
+            <button class="btn-main" id="download-hq-btn" type="button"><i class="fa fa-star"></i> HQ Download</button>
           </div>
         </div>
       </div>
@@ -525,31 +539,39 @@
   </main>
 
   <footer>
-    <div class="footer-links">
-      <a href="/">Home</a>
-      <a href="/privacy-policy.html">Privacy Policy</a>
-      <a href="/about.html">About SHADER7</a>
+    <div class="branding">
+      <div style="margin-top:.7em;">
+        Credits: Released by <strong>nishikant xalxo</strong>
+        (<a href="https://www.instagram.com/nishix_vamp" target="_blank" rel="noopener noreferrer">@nishix_vamp</a>)<br>
+        Owner: <b>shaderindia</b>
+      </div>
+      <div class="footer-links">
+        <a href="/">All Tools</a>
+        <a href="/blog.html">Blog</a>
+        <a href="/about.html">About</a>
+        <a href="/privacy-policy.html">Privacy Policy</a>
+      </div>
+      <p>&copy; <script>document.write(new Date().getFullYear())</script> SHADER7 - Free Apps for You. All rights reserved.</p>
     </div>
-    <p>&copy; <script>document.write(new Date().getFullYear())</script> SHADER7. All logic runs locally on your device.</p>
   </footer>
-
-  <div id="toast-container"></div>
 
   <div class="modal-glass" id="info-modal" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-labelledby="modal-title">
       <button class="close-btn" id="close-info" aria-label="Close"><i class="fa fa-times"></i></button>
-      <h2 id="modal-title"><i class="fa fa-lightbulb"></i> How to Use</h2>
-      <p style="margin-bottom: 1rem; color: var(--text-muted);">Create professional passport photos without any data leaving your device.</p>
+      <h2 id="modal-title"><i class="fa fa-info-circle"></i> How to Use</h2>
       <ul>
-        <li><strong>Step 1: Upload.</strong> Select a clear, well-lit photo of yourself facing forward.</li>
-        <li><strong>Step 2: Crop.</strong> Adjust the box to tightly frame your head and top of shoulders. Click <b>Confirm Crop</b> to lock it in and save device memory.</li>
-        <li><strong>Step 3: Background AI.</strong> Once cropped, use the <b>Erase Background</b> tool. Pick a compliant color (white or blue usually).</li>
-        <li><strong>Step 4: Print.</strong> Adjust the paper size and gaps. Download the final template and print it at exactly 100% scale (Do not "Scale to Fit").</li>
+        <li>Upload a clear photo. The page will automatically scroll down to the editor.</li>
+        <li><strong>Step 1:</strong> Adjust the crop box or use <b>Smart Auto-Crop</b> to frame your head and shoulders correctly.</li>
+        <li><strong>Step 2:</strong> Click <b>Confirm Crop & Proceed</b>. This permanently trims the edges to save device memory.</li>
+        <li><strong>Step 3:</strong> The AI tools will appear! Click <b>Remove Background</b> to cleanly extract your subject.</li>
+        <li>Pick a background color, adjust the print layout, and download!</li>
       </ul>
     </div>
   </div>
 
-  <script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
+  <script type="module">
     document.addEventListener('DOMContentLoaded', initializeApp);
 
     function initializeApp() {
@@ -561,7 +583,6 @@
         bgProcessing: document.getElementById('bg-processing'),
         processingMsg: document.getElementById('processing-msg'),
         
-        sampleGuide: document.getElementById('sample-guide'),
         confirmCropBtn: document.getElementById('confirm-crop-btn'),
         aiBgPanel: document.getElementById('ai-bg-panel'),
         settingsSection: document.getElementById('settings-section'),
@@ -570,6 +591,7 @@
         changePhotoBtn: document.getElementById('change-photo-btn'),
         bgColorPicker: document.getElementById('bg-color-picker'),
         colorSwatches: document.getElementById('color-swatches'),
+        aiStatus: document.getElementById('ai-status'),
         rotateLeftBtn: document.getElementById('rotate-left'),
         rotateRightBtn: document.getElementById('rotate-right'),
         resetCropBtn: document.getElementById('reset-crop'),
@@ -607,7 +629,6 @@
       let bgRemovedURL = null; 
       let lastCompositeURL = null; 
       let isAIDone = false;
-      let isProcessing = false;
 
       let isDark = false;
       let bgColor = '#ffffff';
@@ -624,25 +645,6 @@
         { color: '#000000', label: 'Black' },
         { color: 'transparent', label: 'Transparent', checkered: true }
       ];
-
-      // ── Premium Toast Notification System ──
-      function showToast(message, type = 'info') {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        
-        let iconClass = 'fa-info-circle';
-        if (type === 'error') iconClass = 'fa-exclamation-circle';
-        if (type === 'success') iconClass = 'fa-check-circle';
-
-        toast.innerHTML = `<i class="fa ${iconClass}"></i> <span>${message}</span>`;
-        container.appendChild(toast);
-
-        setTimeout(() => {
-          toast.classList.add('fade-out');
-          setTimeout(() => toast.remove(), 300);
-        }, 3500);
-      }
 
       function buildSwatches() {
         els.colorSwatches.innerHTML = '';
@@ -700,94 +702,91 @@
       }
 
       function confirmCropStep() {
-        if (!cropper || isProcessing) return;
-        isProcessing = true;
+        if (!cropper) return;
         
-        const origHtml = els.confirmCropBtn.innerHTML;
-        els.confirmCropBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Trimming Data...';
-        els.confirmCropBtn.style.opacity = '0.8';
-
-        setTimeout(() => {
-          const croppedCanvas = cropper.getCroppedCanvas({
-            maxWidth: 1400, 
-            maxHeight: 1400,
-            imageSmoothingEnabled: true,
-            imageSmoothingQuality: 'high'
-          });
-          
-          if (!croppedCanvas) {
-            showToast("Could not process crop boundary.", "error");
-            resetBtn();
-            return;
-          }
-
-          croppedCanvas.toBlob(blob => {
-              if (currentImageURL && currentImageURL !== originalImageURL) {
-                  URL.revokeObjectURL(currentImageURL);
-              }
-              
-              currentImageURL = URL.createObjectURL(blob);
-              startCropper(currentImageURL, false);
-
-              els.confirmCropBtn.classList.add('hidden');
-              els.aiBgPanel.classList.remove('hidden');
-              els.settingsSection.classList.remove('hidden');
-
-              renderCanvas();
-              showToast("Crop confirmed. AI unlocked.", "success");
-
-              setTimeout(() => {
-                  els.aiBgPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }, 150);
-              resetBtn();
-          }, 'image/jpeg', 0.95);
-        }, 50); // slight delay to allow UI to render spinner
-
-        function resetBtn() {
-          isProcessing = false;
-          els.confirmCropBtn.innerHTML = origHtml;
-          els.confirmCropBtn.style.opacity = '1';
+        const croppedCanvas = cropper.getCroppedCanvas({
+          maxWidth: 1200, 
+          maxHeight: 1200,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high'
+        });
+        
+        if (!croppedCanvas) {
+          alert("Could not process crop.");
+          return;
         }
+
+        croppedCanvas.toBlob(blob => {
+            if (currentImageURL && currentImageURL !== originalImageURL) {
+                URL.revokeObjectURL(currentImageURL);
+            }
+            
+            currentImageURL = URL.createObjectURL(blob);
+            startCropper(currentImageURL, false);
+
+            els.confirmCropBtn.classList.add('hidden');
+            els.aiBgPanel.classList.remove('hidden');
+            els.settingsSection.classList.remove('hidden');
+
+            renderCanvas();
+            setTimeout(() => {
+                els.aiBgPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 150);
+        }, 'image/jpeg', 0.95);
       }
 
-      // Safe AI execution using global script fallback
-      async function triggerRemoveBackground() {
+      async function removeBackground() {
         if (!cropper) return;
-        if (isAIDone) { showToast("AI already processed. Pick a color or reset to restart.", "info"); return;}
-        
-        if (typeof imglyRemoveBackground === 'undefined') {
-            showToast("AI blocked by network or adblocker. Please allow scripts from unpkg/jsdelivr.", "error");
-            return;
-        }
+        if (isAIDone) { alert("AI has already processed this image."); return;}
 
+        setStatus('loading', 'Initializing AI Engine...');
         els.removeBgBtn.disabled = true;
-        showProcessingOverlay('AI extracting subject (No freezing)...');
+        showProcessingOverlay('Extracting subject...');
 
         try {
           const response = await fetch(currentImageURL);
           const blob = await response.blob();
 
-          const config = {
-            publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/dist/",
-            model: "small" 
-          };
+          // TECH: Client-side ML using IMG.LY Background Removal
+          const module = await import('https://esm.sh/@imgly/background-removal@1.7.3');
+          const removeBg = module.removeBackground || module.default;
 
-          const transparentBlob = await imglyRemoveBackground(blob, config);
+          const transparentBlob = await removeBg(blob, { model: "small" });
 
           if (bgRemovedURL) URL.revokeObjectURL(bgRemovedURL);
           bgRemovedURL = URL.createObjectURL(transparentBlob);
           isAIDone = true; 
           
           applyBgColorToImage();
+          
           hideProcessingOverlay();
           els.removeBgBtn.disabled = false;
-          showToast('Pro background removed!', 'success');
+          setStatus('success', '✓ Background removed! Select a color below.');
 
         } catch (err) {
-          console.error('AI Error:', err);
+          console.error('AI Processing Error:', err);
           hideProcessingOverlay();
           els.removeBgBtn.disabled = false;
-          showToast('AI Removal failed. ' + err.message, 'error');
+          setStatus('error', 'Error: ' + err.message);
+        }
+      }
+
+      function setStatus(type, msg) {
+        els.aiStatus.innerHTML = '';
+        els.aiStatus.className = 'ai-status-msg';
+        if (type === 'loading') {
+          const spin = document.createElement('div');
+          spin.className = 'spinner-sm';
+          els.aiStatus.appendChild(spin);
+          els.aiStatus.appendChild(document.createTextNode(' ' + msg));
+        } else if (type === 'success') {
+          els.aiStatus.classList.add('success');
+          els.aiStatus.textContent = msg;
+        } else if (type === 'error') {
+          els.aiStatus.classList.add('error');
+          els.aiStatus.textContent = msg;
+        } else {
+          els.aiStatus.textContent = msg;
         }
       }
 
@@ -832,15 +831,15 @@
         els.changePhotoBtn.addEventListener('click', openFilePicker);
         els.photoUpload.addEventListener('change', handleFileSelect);
 
-        els.uploadArea.addEventListener('dragover', e => { e.preventDefault(); els.uploadArea.style.borderColor = 'var(--primary)'; els.uploadArea.style.background = 'rgba(99,102,241,0.05)'; });
-        els.uploadArea.addEventListener('dragleave', e => { e.preventDefault(); els.uploadArea.style.borderColor = ''; els.uploadArea.style.background = ''; });
+        els.uploadArea.addEventListener('dragover', e => { e.preventDefault(); els.uploadArea.style.background = 'rgba(99,102,241,0.08)'; });
+        els.uploadArea.addEventListener('dragleave', e => { e.preventDefault(); els.uploadArea.style.background = ''; });
         els.uploadArea.addEventListener('drop', e => {
-          e.preventDefault(); els.uploadArea.style.borderColor = ''; els.uploadArea.style.background = '';
+          e.preventDefault(); els.uploadArea.style.background = '';
           if (e.dataTransfer.files && e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
         });
 
         els.bgColorPicker.addEventListener('input', e => {
-          if(!isAIDone) { showToast("Click Remove Background first.", "info"); e.target.value = bgColor; return;}
+          if(!isAIDone) { alert("Confirm crop & Remove Background first."); e.target.value = bgColor; return;}
           bgColor = e.target.value || '#ffffff';
           document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
           activeSwatch = null;
@@ -849,7 +848,7 @@
         });
 
         els.confirmCropBtn.addEventListener('click', confirmCropStep);
-        els.removeBgBtn.addEventListener('click', triggerRemoveBackground);
+        els.removeBgBtn.addEventListener('click', removeBackground);
 
         els.rotateLeftBtn.addEventListener('click', () => { if (cropper) { cropper.rotate(-90); renderCanvas(); } });
         els.rotateRightBtn.addEventListener('click', () => { if (cropper) { cropper.rotate(90); renderCanvas(); } });
@@ -862,7 +861,7 @@
             els.settingsSection.classList.add('hidden');
             els.confirmCropBtn.classList.remove('hidden');
             startCropper(originalImageURL, true);
-            showToast("Workspace reset to original.", "info");
+            setStatus('','');
           } 
         });
 
@@ -911,29 +910,23 @@
       function handleFile(file) {
         const allowedExtensions = ['jpg','jpeg','png','webp','bmp','gif','tif','tiff','avif','heic','heif'];
         const ext = (file.name || '').includes('.') ? file.name.split('.').pop().toLowerCase() : '';
-        if (!ext || !allowedExtensions.includes(ext)) { showToast('Unsupported format.', 'error'); return; }
-        if (file.size > 25 * 1024 * 1024) { showToast('File too large. Max 25MB.', 'error'); return; }
+        if (!ext || !allowedExtensions.includes(ext)) { alert('Unsupported format.'); return; }
 
         cleanupImageURLs();
         isAIDone = false;
         
         originalImageURL = URL.createObjectURL(file);
         
-        // Hide Sample Guide
-        els.sampleGuide.style.opacity = '0';
-        setTimeout(()=> els.sampleGuide.style.display = 'none', 300);
-
-        // Unlock UI
         els.editorContainer.classList.remove('hidden');
         els.confirmCropBtn.classList.remove('hidden');
         els.aiBgPanel.classList.add('hidden');
         els.settingsSection.classList.add('hidden');
+        setStatus('', '');
 
         startCropper(originalImageURL, true);
 
-        // Smooth Scroll Down to Editor
         setTimeout(() => {
-          document.getElementById('editor-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+          els.editorContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 150);
       }
 
@@ -958,35 +951,22 @@
         if (isNewFile) currentImageURL = url; 
 
         function initializeCropper() {
-          try {
-            cropper = new Cropper(img, {
-              viewMode: 1,
-              dragMode: 'move',
-              aspectRatio: getAspectRatio(),
-              autoCropArea: 0.85, 
-              restore: false,
-              guides: true,
-              center: true,
-              highlight: false,
-              cropBoxMovable: true,
-              cropBoxResizable: true,
-              toggleDragModeOnDblclick: false,
-              ready() { updateCropperAspectRatio(); renderCanvas(); },
-              cropend() { renderCanvas(); }
-            });
-          } catch (error) {
-            console.error('Cropper error:', error);
-            showToast('Failed to initialize editor.', 'error');
-          }
+          cropper = new Cropper(img, {
+            viewMode: 1,
+            dragMode: 'move',
+            aspectRatio: getAspectRatio(),
+            autoCropArea: 0.85, 
+            restore: false,
+            guides: true,
+            center: true,
+            highlight: false,
+            ready() { updateCropperAspectRatio(); renderCanvas(); },
+            cropend() { renderCanvas(); }
+          });
         }
 
         if (img.complete && img.naturalWidth) { initializeCropper(); }
         else { img.onload = initializeCropper; }
-        img.onerror = function() {
-          console.error('Image failed to load');
-          showToast('Image load failed.', 'error');
-          cleanupImageURLs();
-        };
       }
 
       function getAspectRatio() {
@@ -1052,23 +1032,18 @@
       function handlePageSizeChange() {
         const isCustom = els.pageSize.value === 'custom';
         els.customPageSize.classList.toggle('hidden', !isCustom);
-        if (isCustom) { if (!els.customWidth.value) els.customWidth.value = 210; if (!els.customHeight.value) els.customHeight.value = 297; }
         renderCanvas();
       }
 
       function computePerRow(dims, page) {
         const available = page.w - dims.marginL;
-        if (available <= dims.w) return 1;
         const denom = dims.w + dims.gapH;
-        if (denom <= 0) return 1;
-        return Math.max(1, Math.floor((available - dims.w) / denom) + 1);
+        return denom <= 0 ? 1 : Math.max(1, Math.floor((available - dims.w) / denom) + 1);
       }
       function computeMaxRows(dims, page) {
         const available = page.h - dims.marginT;
-        if (available <= dims.h) return 1;
         const denom = dims.h + dims.gapV;
-        if (denom <= 0) return 1;
-        return Math.max(1, Math.floor((available - dims.h) / denom) + 1);
+        return denom <= 0 ? 1 : Math.max(1, Math.floor((available - dims.h) / denom) + 1);
       }
 
       async function autoFixLayout() {
@@ -1077,49 +1052,21 @@
         
         els.photoWidth.value = pxToCurrent(300);
         els.photoHeight.value = pxToCurrent(400);
-        els.hSpacing.value = pxToCurrent(35);
-        els.vSpacing.value = pxToCurrent(35);
-        els.marginTop.value = pxToCurrent(35);
-        els.marginLeft.value = pxToCurrent(35);
 
         if (cropper) {
           cropper.setAspectRatio(300 / 400);
-          
-          try {
-            if ('FaceDetector' in window) {
-              const faceDetector = new window.FaceDetector({ maxDetectedFaces: 1 });
-              const faces = await faceDetector.detect(els.imageToCrop);
-              
-              if (faces.length > 0) {
-                const face = faces[0].boundingBox;
-                const faceCenterX = face.x + (face.width / 2);
-                const faceCenterY = face.y + (face.height / 2);
-                const cropWidth = face.width * 2.6; 
-                const cropHeight = cropWidth * (400 / 300); 
-                
-                cropper.setData({
-                  x: faceCenterX - (cropWidth / 2),
-                  y: Math.max(0, faceCenterY - (cropHeight * 0.42)), 
-                  width: cropWidth,
-                  height: cropHeight
-                });
-              } else { cropper.reset(); }
-            } else { cropper.reset(); }
-          } catch(e) {
-            console.warn("Hardware face detection fallback.", e);
-            cropper.reset();
-          }
+          cropper.reset();
         }
         
         renderCanvas();
-        showToast("Auto-Fit Applied!", "success");
+        els.autofixBtn.disabled = true;
+        setTimeout(() => { els.autofixBtn.disabled = false; }, 1000);
       }
 
       function maxPhotosPerPage() {
         const dims = getDims(); const page = getPageSize();
         els.numPhotos.value = computePerRow(dims, page) * computeMaxRows(dims, page);
         renderCanvas();
-        showToast("Grid maximized.", "info");
       }
 
       function renderCanvas() {
@@ -1127,119 +1074,49 @@
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         const page = getPageSize(); const dims = getDims();
-        const count = Math.max(1, parseInt(els.numPhotos.value || '1', 10) || 1);
-        const pageW = Math.max(1, Math.round(page.w));
-        const pageH = Math.max(1, Math.round(page.h));
+        const count = Math.max(1, parseInt(els.numPhotos.value || '1', 10));
         
-        canvas.width = pageW; canvas.height = pageH;
-        canvas.style.width = '100%'; canvas.style.height = 'auto';
-        
+        canvas.width = Math.round(page.w); canvas.height = Math.round(page.h);
         ctx.fillStyle = isDark ? '#111827' : '#ffffff';
-        ctx.fillRect(0, 0, pageW, pageH);
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         if (!cropper) return;
 
         const perRow = computePerRow(dims, page);
-        if (perRow < 1) return;
-        const maxRows = computeMaxRows(dims, page);
-        if (maxRows < 1) return;
-        const photosToDraw = Math.min(count, perRow * maxRows);
-
         const cropCanvas = cropper.getCroppedCanvas({
-          width: Math.max(1, Math.round(dims.w)),
-          height: Math.max(1, Math.round(dims.h)),
-          imageSmoothingEnabled: true,
-          imageSmoothingQuality: 'high',
+          width: Math.round(dims.w),
+          height: Math.round(dims.h),
           fillColor: bgColor === 'transparent' ? 'rgba(0,0,0,0)' : bgColor 
         });
         if (!cropCanvas) return;
 
-        const showBorder = els.addBorder.checked;
-        for (let i = 0; i < photosToDraw; i++) {
+        for (let i = 0; i < count; i++) {
           const row = Math.floor(i / perRow);
           const col = i % perRow;
           const x = dims.marginL + col * (dims.w + dims.gapH);
           const y = dims.marginT + row * (dims.h + dims.gapV);
           
-          if (x + dims.w > pageW + 0.1 || y + dims.h > pageH + 0.1) continue;
-
+          if (x + dims.w > canvas.width + 1 || y + dims.h > canvas.height + 1) continue;
           ctx.drawImage(cropCanvas, x, y, dims.w, dims.h);
           
-          if (showBorder) {
-            ctx.save(); ctx.strokeStyle = '#000000'; ctx.lineWidth = 1;
-            ctx.strokeRect(x + 0.5, y + 0.5, dims.w - 1, dims.h - 1);
-            ctx.restore();
+          if (els.addBorder.checked) {
+            ctx.strokeStyle = '#000000'; ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, dims.w, dims.h);
           }
-        }
-
-        if (els.showCutlines.checked) {
-          ctx.save(); ctx.strokeStyle = '#9ca3af'; ctx.setLineDash([4,4]); ctx.lineWidth = 1;
-          const rowsNeeded = Math.ceil(photosToDraw / perRow);
-
-          for (let col = 0; col < perRow - 1; col++) {
-            let minY = null, maxY = null;
-            for (let row = 0; row < rowsNeeded; row++) {
-              const li = row * perRow + col; const ri = li + 1;
-              if (li < photosToDraw && ri < photosToDraw) {
-                const y = dims.marginT + row * (dims.h + dims.gapV);
-                if (minY === null) minY = y;
-                maxY = y + dims.h;
-              }
-            }
-            if (minY !== null) {
-              const x = dims.marginL + (col+1) * dims.w + col * dims.gapH + dims.gapH / 2;
-              ctx.beginPath(); ctx.moveTo(x+0.5, minY); ctx.lineTo(x+0.5, maxY); ctx.stroke();
-            }
-          }
-
-          for (let row = 0; row < rowsNeeded - 1; row++) {
-            let minX = null, maxX = null;
-            for (let col = 0; col < perRow; col++) {
-              const ti = row * perRow + col; const bi = ti + perRow;
-              if (ti < photosToDraw && bi < photosToDraw) {
-                const x = dims.marginL + col * (dims.w + dims.gapH);
-                if (minX === null) minX = x;
-                maxX = x + dims.w;
-              }
-            }
-            if (minX !== null) {
-              const y = dims.marginT + (row+1) * dims.h + row * dims.gapV + dims.gapV / 2;
-              ctx.beginPath(); ctx.moveTo(minX, y+0.5); ctx.lineTo(maxX, y+0.5); ctx.stroke();
-            }
-          }
-          ctx.restore();
         }
       }
 
       function downloadOutput(highQuality) {
         const ext = els.format.value || 'jpg';
-        const mime = ext === 'jpg' ? 'image/jpeg' : 'image/png';
         const quality = highQuality ? 1.0 : 0.92;
-        const filename = 'passport-photo-' + Date.now() + '.' + ext;
-        const btn = highQuality ? els.downloadHQBtn : els.downloadBtn;
-        const orig = btn.innerHTML;
-        
-        btn.disabled = true; btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Processing...';
         
         els.outputCanvas.toBlob(blob => {
-          if (!blob) { showToast('Canvas error.', 'error'); btn.innerHTML = orig; btn.disabled = false; return; }
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
-          link.href = url; link.download = filename;
-          document.body.appendChild(link); link.click();
-          
-          btn.innerHTML = '<i class="fa fa-check"></i> Success!';
-          btn.style.background = 'var(--success)';
-          btn.style.color = '#fff';
-
-          setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 200);
-          
-          setTimeout(() => { 
-            btn.innerHTML = orig; btn.disabled = false; 
-            btn.style.background = ''; btn.style.color = '';
-          }, 2000);
-
-        }, mime, quality);
+          link.href = url; link.download = `passport-photo-${Date.now()}.${ext}`;
+          link.click();
+          URL.revokeObjectURL(url);
+        }, ext === 'jpg' ? 'image/jpeg' : 'image/png', quality);
       }
 
       function toggleTheme() {
@@ -1250,8 +1127,7 @@
       }
       function updateThemeIcon() {
         const icon = els.themeBtn.querySelector('i');
-        if (!icon) return;
-        icon.className = isDark ? 'fa fa-sun' : 'fa fa-moon';
+        if (icon) icon.className = isDark ? 'fa fa-sun' : 'fa fa-moon';
       }
 
       init();
