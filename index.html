@@ -626,8 +626,8 @@
       let cropper = null;
       let originalImageURL = null; 
       let currentImageURL = null;  
-      let bgRemovedURL = null; 
-      let lastCompositeURL = null; 
+      let bgRemovedURL = null; // Strict Blob Architecture
+      let lastCompositeURL = null; // Memory leak prevention
       let isAIDone = false;
 
       let isDark = false;
@@ -679,6 +679,7 @@
         });
       }
 
+      // Memory-safe compositing via Blob
       function compositeTransparentPNG(transparentURL, color, callback) {
         const img = new Image();
         img.onload = () => {
@@ -701,6 +702,7 @@
         img.src = transparentURL;
       }
 
+      // ── Step 2: Crop First (Strict Blob Memory limits) ──
       function confirmCropStep() {
         if (!cropper) return;
         
@@ -716,6 +718,7 @@
           return;
         }
 
+        // Avoid Base64 memory crash by converting canvas directly to Blob
         croppedCanvas.toBlob(blob => {
             if (currentImageURL && currentImageURL !== originalImageURL) {
                 URL.revokeObjectURL(currentImageURL);
@@ -735,23 +738,28 @@
         }, 'image/jpeg', 0.95);
       }
 
+      // ── Background Web Worker AI Engine (Crash Free) ──
       async function removeBackground() {
         if (!cropper) return;
-        if (isAIDone) { alert("AI has already processed this image."); return;}
+        if (isAIDone) { alert("AI has already processed this image. Pick a color below or reset crop to restart."); return;}
 
-        setStatus('loading', 'Initializing AI Engine...');
+        setStatus('loading', 'Initializing Off-Thread AI Engine...');
         els.removeBgBtn.disabled = true;
-        showProcessingOverlay('Extracting subject...');
+        showProcessingOverlay('AI extracting subject (No freezing)...');
 
         try {
+          // Fetch native blob from our ObjectURL pointer
           const response = await fetch(currentImageURL);
           const blob = await response.blob();
 
-          // TECH: Client-side ML using IMG.LY Background Removal
+          // Use Imgly specifically because it handles Web Workers internally, completely unblocking the main UI thread.
           const module = await import('https://esm.sh/@imgly/background-removal@1.7.3');
           const removeBg = module.removeBackground || module.default;
 
-          const transparentBlob = await removeBg(blob, { model: "small" });
+          // Process the Blob entirely off-thread
+          const transparentBlob = await removeBg(blob, {
+             model: "small" // guarantees stability on low RAM phones
+          });
 
           if (bgRemovedURL) URL.revokeObjectURL(bgRemovedURL);
           bgRemovedURL = URL.createObjectURL(transparentBlob);
@@ -761,13 +769,16 @@
           
           hideProcessingOverlay();
           els.removeBgBtn.disabled = false;
-          setStatus('success', '✓ Background removed! Select a color below.');
+          setStatus('success', '✓ Pro background removed! Pick a color below.');
 
         } catch (err) {
           console.error('AI Processing Error:', err);
           hideProcessingOverlay();
           els.removeBgBtn.disabled = false;
-          setStatus('error', 'Error: ' + err.message);
+          let errorMessage = 'AI Removal failed. ' + err.message;
+          if (window.location.protocol === 'file:') errorMessage = 'Security block: You must run this on a local web server to test AI.';
+          setStatus('error', errorMessage);
+          alert(errorMessage); 
         }
       }
 
@@ -910,7 +921,8 @@
       function handleFile(file) {
         const allowedExtensions = ['jpg','jpeg','png','webp','bmp','gif','tif','tiff','avif','heic','heif'];
         const ext = (file.name || '').includes('.') ? file.name.split('.').pop().toLowerCase() : '';
-        if (!ext || !allowedExtensions.includes(ext)) { alert('Unsupported format.'); return; }
+        if (!ext || !allowedExtensions.includes(ext)) { alert('Unsupported format. Supported: JPG, PNG, WEBP, BMP, GIF, TIFF, AVIF, HEIC.'); return; }
+        if (file.size > 25 * 1024 * 1024) { alert('File too large. Max 25MB.'); return; }
 
         cleanupImageURLs();
         isAIDone = false;
@@ -923,6 +935,9 @@
         els.settingsSection.classList.add('hidden');
         setStatus('', '');
 
+        const cropContainer = document.querySelector('.crop-container');
+        if (cropContainer) { cropContainer.classList.add('pulse-effect'); setTimeout(() => cropContainer.classList.remove('pulse-effect'), 1200); }
+        
         startCropper(originalImageURL, true);
 
         setTimeout(() => {
@@ -930,6 +945,7 @@
         }, 150);
       }
 
+      // Memory leak prevention
       function cleanupImageURLs() {
         if (originalImageURL) URL.revokeObjectURL(originalImageURL);
         if (currentImageURL && currentImageURL !== originalImageURL) URL.revokeObjectURL(currentImageURL);
@@ -941,6 +957,7 @@
       function startCropper(url, isNewFile = false) {
         if (cropper) { cropper.destroy(); cropper = null; }
         
+        // Strictly revoke old URLs if we are switching contexts to save RAM
         if (isNewFile && currentImageURL && currentImageURL !== originalImageURL) {
              URL.revokeObjectURL(currentImageURL);
         }
@@ -951,22 +968,35 @@
         if (isNewFile) currentImageURL = url; 
 
         function initializeCropper() {
-          cropper = new Cropper(img, {
-            viewMode: 1,
-            dragMode: 'move',
-            aspectRatio: getAspectRatio(),
-            autoCropArea: 0.85, 
-            restore: false,
-            guides: true,
-            center: true,
-            highlight: false,
-            ready() { updateCropperAspectRatio(); renderCanvas(); },
-            cropend() { renderCanvas(); }
-          });
+          try {
+            cropper = new Cropper(img, {
+              viewMode: 1,
+              dragMode: 'move',
+              aspectRatio: getAspectRatio(),
+              autoCropArea: 0.85, 
+              restore: false,
+              guides: true,
+              center: true,
+              highlight: false,
+              cropBoxMovable: true,
+              cropBoxResizable: true,
+              toggleDragModeOnDblclick: false,
+              ready() { updateCropperAspectRatio(); renderCanvas(); },
+              cropend() { renderCanvas(); }
+            });
+          } catch (error) {
+            console.error('Cropper error:', error);
+            alert('Failed to initialize editor. Try again.');
+          }
         }
 
         if (img.complete && img.naturalWidth) { initializeCropper(); }
         else { img.onload = initializeCropper; }
+        img.onerror = function() {
+          console.error('Image failed to load');
+          alert('Unsupported image format.');
+          cleanupImageURLs();
+        };
       }
 
       function getAspectRatio() {
@@ -1032,18 +1062,23 @@
       function handlePageSizeChange() {
         const isCustom = els.pageSize.value === 'custom';
         els.customPageSize.classList.toggle('hidden', !isCustom);
+        if (isCustom) { if (!els.customWidth.value) els.customWidth.value = 210; if (!els.customHeight.value) els.customHeight.value = 297; }
         renderCanvas();
       }
 
       function computePerRow(dims, page) {
         const available = page.w - dims.marginL;
+        if (available <= dims.w) return 1;
         const denom = dims.w + dims.gapH;
-        return denom <= 0 ? 1 : Math.max(1, Math.floor((available - dims.w) / denom) + 1);
+        if (denom <= 0) return 1;
+        return Math.max(1, Math.floor((available - dims.w) / denom) + 1);
       }
       function computeMaxRows(dims, page) {
         const available = page.h - dims.marginT;
+        if (available <= dims.h) return 1;
         const denom = dims.h + dims.gapV;
-        return denom <= 0 ? 1 : Math.max(1, Math.floor((available - dims.h) / denom) + 1);
+        if (denom <= 0) return 1;
+        return Math.max(1, Math.floor((available - dims.h) / denom) + 1);
       }
 
       async function autoFixLayout() {
@@ -1052,21 +1087,55 @@
         
         els.photoWidth.value = pxToCurrent(300);
         els.photoHeight.value = pxToCurrent(400);
+        els.hSpacing.value = pxToCurrent(35);
+        els.vSpacing.value = pxToCurrent(35);
+        els.marginTop.value = pxToCurrent(35);
+        els.marginLeft.value = pxToCurrent(35);
 
         if (cropper) {
           cropper.setAspectRatio(300 / 400);
-          cropper.reset();
+          
+          try {
+            if ('FaceDetector' in window) {
+              const faceDetector = new window.FaceDetector({ maxDetectedFaces: 1 });
+              const faces = await faceDetector.detect(els.imageToCrop);
+              
+              if (faces.length > 0) {
+                const face = faces[0].boundingBox;
+                const faceCenterX = face.x + (face.width / 2);
+                const faceCenterY = face.y + (face.height / 2);
+                const cropWidth = face.width * 2.6; 
+                const cropHeight = cropWidth * (400 / 300); 
+                
+                cropper.setData({
+                  x: faceCenterX - (cropWidth / 2),
+                  y: Math.max(0, faceCenterY - (cropHeight * 0.42)), 
+                  width: cropWidth,
+                  height: cropHeight
+                });
+              } else { cropper.reset(); }
+            } else { cropper.reset(); }
+          } catch(e) {
+            console.warn("Hardware face detection failed. Center crop fallback.", e);
+            cropper.reset();
+          }
         }
         
         renderCanvas();
+        const orig = els.autofixBtn.innerHTML;
+        els.autofixBtn.innerHTML = '<i class="fa fa-user-check"></i> Applied!';
         els.autofixBtn.disabled = true;
-        setTimeout(() => { els.autofixBtn.disabled = false; }, 1000);
+        setTimeout(() => { els.autofixBtn.innerHTML = orig; els.autofixBtn.disabled = false; }, 1600);
       }
 
       function maxPhotosPerPage() {
         const dims = getDims(); const page = getPageSize();
         els.numPhotos.value = computePerRow(dims, page) * computeMaxRows(dims, page);
         renderCanvas();
+        const orig = els.maxPhotosBtn.innerHTML;
+        els.maxPhotosBtn.innerHTML = '<i class="fa fa-check"></i> Maxed';
+        els.maxPhotosBtn.disabled = true;
+        setTimeout(() => { els.maxPhotosBtn.innerHTML = orig; els.maxPhotosBtn.disabled = false; }, 1400);
       }
 
       function renderCanvas() {
@@ -1074,49 +1143,110 @@
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         const page = getPageSize(); const dims = getDims();
-        const count = Math.max(1, parseInt(els.numPhotos.value || '1', 10));
+        const count = Math.max(1, parseInt(els.numPhotos.value || '1', 10) || 1);
+        const pageW = Math.max(1, Math.round(page.w));
+        const pageH = Math.max(1, Math.round(page.h));
         
-        canvas.width = Math.round(page.w); canvas.height = Math.round(page.h);
+        canvas.width = pageW; canvas.height = pageH;
+        canvas.style.width = '100%'; canvas.style.height = 'auto';
+        
         ctx.fillStyle = isDark ? '#111827' : '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, pageW, pageH);
         
         if (!cropper) return;
 
         const perRow = computePerRow(dims, page);
+        if (perRow < 1) return;
+        const maxRows = computeMaxRows(dims, page);
+        if (maxRows < 1) return;
+        const photosToDraw = Math.min(count, perRow * maxRows);
+
         const cropCanvas = cropper.getCroppedCanvas({
-          width: Math.round(dims.w),
-          height: Math.round(dims.h),
+          width: Math.max(1, Math.round(dims.w)),
+          height: Math.max(1, Math.round(dims.h)),
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high',
           fillColor: bgColor === 'transparent' ? 'rgba(0,0,0,0)' : bgColor 
         });
         if (!cropCanvas) return;
 
-        for (let i = 0; i < count; i++) {
+        const showBorder = els.addBorder.checked;
+        for (let i = 0; i < photosToDraw; i++) {
           const row = Math.floor(i / perRow);
           const col = i % perRow;
           const x = dims.marginL + col * (dims.w + dims.gapH);
           const y = dims.marginT + row * (dims.h + dims.gapV);
           
-          if (x + dims.w > canvas.width + 1 || y + dims.h > canvas.height + 1) continue;
+          if (x + dims.w > pageW + 0.1 || y + dims.h > pageH + 0.1) continue;
+
           ctx.drawImage(cropCanvas, x, y, dims.w, dims.h);
           
-          if (els.addBorder.checked) {
-            ctx.strokeStyle = '#000000'; ctx.lineWidth = 1;
-            ctx.strokeRect(x, y, dims.w, dims.h);
+          if (showBorder) {
+            ctx.save(); ctx.strokeStyle = '#000000'; ctx.lineWidth = 1;
+            ctx.strokeRect(x + 0.5, y + 0.5, dims.w - 1, dims.h - 1);
+            ctx.restore();
           }
+        }
+
+        if (els.showCutlines.checked) {
+          ctx.save(); ctx.strokeStyle = '#9ca3af'; ctx.setLineDash([4,4]); ctx.lineWidth = 1;
+          const rowsNeeded = Math.ceil(photosToDraw / perRow);
+
+          for (let col = 0; col < perRow - 1; col++) {
+            let minY = null, maxY = null;
+            for (let row = 0; row < rowsNeeded; row++) {
+              const li = row * perRow + col; const ri = li + 1;
+              if (li < photosToDraw && ri < photosToDraw) {
+                const y = dims.marginT + row * (dims.h + dims.gapV);
+                if (minY === null) minY = y;
+                maxY = y + dims.h;
+              }
+            }
+            if (minY !== null) {
+              const x = dims.marginL + (col+1) * dims.w + col * dims.gapH + dims.gapH / 2;
+              ctx.beginPath(); ctx.moveTo(x+0.5, minY); ctx.lineTo(x+0.5, maxY); ctx.stroke();
+            }
+          }
+
+          for (let row = 0; row < rowsNeeded - 1; row++) {
+            let minX = null, maxX = null;
+            for (let col = 0; col < perRow; col++) {
+              const ti = row * perRow + col; const bi = ti + perRow;
+              if (ti < photosToDraw && bi < photosToDraw) {
+                const x = dims.marginL + col * (dims.w + dims.gapH);
+                if (minX === null) minX = x;
+                maxX = x + dims.w;
+              }
+            }
+            if (minX !== null) {
+              const y = dims.marginT + (row+1) * dims.h + row * dims.gapV + dims.gapV / 2;
+              ctx.beginPath(); ctx.moveTo(minX, y+0.5); ctx.lineTo(maxX, y+0.5); ctx.stroke();
+            }
+          }
+          ctx.restore();
         }
       }
 
       function downloadOutput(highQuality) {
         const ext = els.format.value || 'jpg';
+        const mime = ext === 'jpg' ? 'image/jpeg' : 'image/png';
         const quality = highQuality ? 1.0 : 0.92;
+        const filename = 'passport-photo-' + Date.now() + '.' + ext;
+        const btn = highQuality ? els.downloadHQBtn : els.downloadBtn;
+        const orig = btn.innerHTML;
+        
+        btn.disabled = true; btn.innerHTML = '<i class="fa fa-check"></i> Downloaded'; btn.classList.add('btn-success');
         
         els.outputCanvas.toBlob(blob => {
+          if (!blob) { alert('Canvas error.'); btn.innerHTML = orig; btn.disabled = false; btn.classList.remove('btn-success'); return; }
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
-          link.href = url; link.download = `passport-photo-${Date.now()}.${ext}`;
-          link.click();
-          URL.revokeObjectURL(url);
-        }, ext === 'jpg' ? 'image/jpeg' : 'image/png', quality);
+          link.href = url; link.download = filename;
+          document.body.appendChild(link); link.click();
+          setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 200);
+        }, mime, quality);
+        
+        setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; btn.classList.remove('btn-success'); }, 2000);
       }
 
       function toggleTheme() {
@@ -1127,7 +1257,8 @@
       }
       function updateThemeIcon() {
         const icon = els.themeBtn.querySelector('i');
-        if (icon) icon.className = isDark ? 'fa fa-sun' : 'fa fa-moon';
+        if (!icon) return;
+        icon.className = isDark ? 'fa fa-sun' : 'fa fa-moon';
       }
 
       init();
